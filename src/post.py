@@ -8,13 +8,13 @@ log = getLogger()
 
 
 class Post:
-    def __init__(self, contents: str, client: BGGClient):
+    def __init__(self, contents: str):
         self.contents = contents
         self.post_type = 'post'
         self.table_name = 'post'
-        self.bgg_client = client
+        self.bgg_client = BGGClient()
         self.game = self.get_game()
-        self.user = self.get_user()
+        self.user = 'test'
 
     def get_game(self) -> Optional[BoardGame]:
         try:
@@ -28,41 +28,37 @@ class Post:
             return game_fuzzy
 
 
-    def get_user(self):
-        pass
-
-
 class SearchPost(Post):
-    def __init__(self, contents: str, bgg_client: BGGClient):
-        super().__init__(contents, bgg_client)
+    def __init__(self, contents: str):
+        super().__init__(contents)
         self.post_type = 'search'
         self.table_name = 'search'
 
 class InterestPost(Post):
-    def __init__(self, contents: str, bgg_client: BGGClient):
-        super().__init__(contents, bgg_client)
+    def __init__(self, contents: str):
+        super().__init__(contents)
         self.post_type = 'interest'
         self.table_name = 'interest'
 
 
 class SalePost(Post):
-    def __init__(self, contents: str, bgg_client: BGGClient):
-        super().__init__(contents, bgg_client)
+    def __init__(self, contents: str):
+        super().__init__(contents)
         self.post_type = 'sale'
         self.table_name = 'sale'
 
 
-def get_post(message: str, bgg_client: BGGClient) -> Post:
+def get_post(message: str) -> Post:
     message = message.lower()
 
     if '#lookingfor' in message:
         contents = message.replace('#lookingfor', '').strip()
-        return SearchPost(contents, bgg_client)
+        return SearchPost(contents)
     elif '#seekinginterest' in message:
         contents = message.replace('#seekinginterest', '').strip()
-        return InterestPost(contents, bgg_client)
+        return InterestPost(contents)
     elif '#sale' in message or '#selling' in message:
         contents = message.replace('#sale', '').replace('#selling', '').strip()
-        return SalePost(contents, bgg_client)
-    return Post(message, bgg_client)
+        return SalePost(contents)
+    return Post(message)
 

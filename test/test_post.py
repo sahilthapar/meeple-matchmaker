@@ -7,10 +7,6 @@ from src.post import Post, SearchPost, InterestPost, SalePost, get_post
 
 class TestPost:
 
-    @pytest.fixture(name="bgg_client")
-    def bgg_client(self):
-        return BGGClient()
-
     # @pytest.mark.parametrize(
     #     argnames="message, expected_bgg_id",
     #     argvalues=[
@@ -38,12 +34,11 @@ class TestPost:
         ]
 
     )
-    def test_get_post(self, bgg_client, message, expected_type, expected_table_name, expected_game_id):
+    def test_get_post(self, message, expected_type, expected_table_name, expected_game_id):
 
         with expected_game_id as e:
-            post = get_post(message, bgg_client)
+            post = get_post(message)
             assert type(post) == expected_type
-            assert post.bgg_client == bgg_client
             assert post.table_name == expected_table_name
             assert post.game.id == e
 
