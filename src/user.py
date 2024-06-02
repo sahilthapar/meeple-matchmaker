@@ -3,5 +3,5 @@ class User:
         pass
 
 
-def get_user(message: str) -> User:
+def get_user(message: str) -> str:
     pass

@@ -5,5 +5,5 @@ class Game(Thing):
         super().__init__(name)
 
 
-def get_game(message: str) -> Game:
+def get_game(message: str) -> str:
     pass

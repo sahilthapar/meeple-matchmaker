@@ -3,27 +3,31 @@ from src.user import User, get_user
 
 
 class Post:
-    def __init__(self, game: Game, user: User):
+    def __init__(self, game: str, user: str):
         self.game = game
         self.user = user
-        self.post_type = 'Post'
+        self.post_type = 'post'
+        self.table_name = 'post'
 
 
 class SearchPost(Post):
-    def __init__(self, game: Game, user: User):
+    def __init__(self, game: str, user: str):
         super().__init__(game, user)
-        self.post_type = 'Search'
+        self.post_type = 'search'
+        self.table_name = 'search'
 
 class InterestPost(Post):
-    def __init__(self, game: Game, user: User):
+    def __init__(self, game: str, user: str):
         super().__init__(game, user)
-        self.post_type = 'Interest'
+        self.post_type = 'interest'
+        self.table_name = 'interest'
 
 
 class SalePost(Post):
-    def __init__(self, game: Game, user: User):
+    def __init__(self, game: str, user: str):
         super().__init__(game, user)
-        self.post_type = 'Sale'
+        self.post_type = 'sale'
+        self.table_name = 'sale'
 
 
 def get_post(message: str) -> Post:
