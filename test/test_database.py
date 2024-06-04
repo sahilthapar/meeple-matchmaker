@@ -7,20 +7,23 @@ from src.telegrampost import get_post
 class TestDatabase:
 
     @pytest.fixture(name="post")
-    def post(self):
-        return get_post("#seekingInterest Terraforming Mars")
+    def post(self, mocker):
+        message = mocker.patch("telegram.Message")
+        message.text = "#seekingInterest Terraforming Mars"
+        message.from_user.id = 101
+        return get_post(message)
 
     @pytest.fixture(name="sample_data_tuple")
     def sample_data_tuple(self):
-        return 'interest', 167791, 'terraforming mars', 'test', 1
+        return 'sale', 167791, 'terraforming mars', '101', 1
 
     @pytest.fixture(name="sample_data_tuples")
     def sample_data_tuples(self):
         return [
-            ('interest', 167791, 'terraforming mars', 'test', 1),
-            ('search', 167791, 'terraforming mars', 'test-one', 1),
-            ('sale', 167791, 'terraforming mars', 'test-two', 1),
-            ('search', 123, 'monopoly', 'test-two', 1),
+            ('sale', 167791, 'terraforming mars', '101', 1),
+            ('search', 167791, 'terraforming mars', '101', 1),
+            ('sale', 167791, 'terraforming mars', '101', 1),
+            ('search', 123, 'monopoly', '101', 1),
         ]
 
     @pytest.fixture(name="con")
