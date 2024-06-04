@@ -25,12 +25,14 @@ class TestPost:
     def test_get_post(self, mock_message, message, user_id, expected_type, expected_table_name, expected_game_id):
         mock_message.text = message
         mock_message.from_user.id = user_id
+        mock_message.from_user.user_name = user_id * 100
 
         post = get_post(mock_message)
         assert isinstance(post, expected_type)
         assert post.table_name == expected_table_name
         assert post.game_id == expected_game_id
         assert post.user_id == user_id
+        assert post.user_name == user_id.upper()
 
     @pytest.mark.parametrize(
         argnames="message, expected_tuple",

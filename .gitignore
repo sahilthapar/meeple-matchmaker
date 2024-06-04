@@ -2,3 +2,6 @@ venv/
 .idea/
 
 /auth.json
+
+
+/meeple-matchmaker
