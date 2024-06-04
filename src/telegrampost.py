@@ -1,3 +1,4 @@
+from telegram import Message
 from typing import Optional, Tuple
 from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError
@@ -7,9 +8,9 @@ from boardgamegeek.objects.games import BoardGame
 log = getLogger()
 
 
-class Post:
-    def __init__(self, contents: str):
-        self.contents = contents
+class TelegramPost:
+    def __init__(self, text: str):
+        self.text = text
         self.post_type = 'post'
         self.table_name = 'post'
         self.bgg_client = BGGClient()
@@ -20,21 +21,21 @@ class Post:
     def _get_game(self) -> Optional[BoardGame]:
         try:
             log.info("Trying exact match")
-            game_exact = self.bgg_client.game(self.contents, exact=True)
+            game_exact = self.bgg_client.game(self.text, exact=True)
             if game_exact:
                 return game_exact
         except BGGItemNotFoundError:
             log.info("Failed to find exact match")
-            game_fuzzy = self.bgg_client.game(self.contents, exact=False)
+            game_fuzzy = self.bgg_client.game(self.text, exact=False)
             return game_fuzzy
 
     def to_db_tuple(self):
         pass
 
 
-class SearchPost(Post):
-    def __init__(self, contents: str):
-        super().__init__(contents)
+class TelegramSearchPost(TelegramPost):
+    def __init__(self, text: str):
+        super().__init__(text)
         self.post_type = 'search'
         self.table_name = 'search'
         self.game = self._get_game()
@@ -42,7 +43,7 @@ class SearchPost(Post):
         self.insert_into_db = True
 
     def to_db_tuple(self, active=True) -> Tuple:
-        return self.post_type, self.game.id, self.contents, self.user, active
+        return self.post_type, self.game.id, self.text, self.user, active
 
 # class InterestPost(Post):
 #     def __init__(self, contents: str):
@@ -53,9 +54,9 @@ class SearchPost(Post):
 #         self.user = 'test'
 
 
-class SalePost(Post):
-    def __init__(self, contents: str):
-        super().__init__(contents)
+class TelegramSalePost(TelegramPost):
+    def __init__(self, text: str):
+        super().__init__(text)
         self.post_type = 'sale'
         self.table_name = 'sale'
         self.game = self._get_game()
@@ -63,24 +64,24 @@ class SalePost(Post):
         self.insert_into_db = True
 
     def to_db_tuple(self, active=True) -> Tuple:
-        return self.post_type, self.game.id, self.contents, self.user, active
+        return self.post_type, self.game.id, self.text, self.user, active
 
 
-def get_post(message: str) -> Post:
-    message = message.lower()
-
+def get_post(message: Message) -> TelegramPost:
+    message = message.text.lower()
+    print(message)
     if '#lookingfor' in message:
-        contents = message.replace('#lookingfor', '').strip()
-        return SearchPost(contents)
+        text = message.replace('#lookingfor', '').strip()
+        return TelegramSearchPost(text)
     # elif '#seekinginterest' in message:
-    #     contents = message.replace('#seekinginterest', '').strip()
-    #     return InterestPost(contents)
+    #     text = message.replace('#seekinginterest', '').strip()
+    #     return InterestPost(text)
     elif '#sale' in message or '#selling' in message or "#seekinginterest" in message:
-        contents = message\
+        text = message\
             .replace('#sale', '')\
             .replace('#selling', '')\
             .replace('#seekinginterest', '')\
             .strip()
-        return SalePost(contents)
-    return Post(message)
+        return TelegramSalePost(text)
+    return TelegramPost(message)
 

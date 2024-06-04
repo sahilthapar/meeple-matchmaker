@@ -1,11 +1,11 @@
-from src.post import Post
+from src.telegrampost import TelegramPost
 import sqlite3
 from typing import Optional
 from sqlite3 import Cursor
 
-def write_to_post_db(cursor: Cursor, posts: list[Post]):
+def write_to_post_db(cursor: Cursor, posts: list[TelegramPost]):
     sql_tuples = [(
-        post.post_type, post.game.id, post.contents, post.user, True
+        post.post_type, post.game.id, post.text, post.user, True
     ) for post in posts]
     cursor.executemany(
         'INSERT INTO post (post_type, game_id, contents, user, active) VALUES (?,?,?,?,?)',

@@ -1,28 +1,31 @@
 import pytest
 from contextlib import nullcontext
-from boardgamegeek.exceptions import BGGItemNotFoundError
 
-from src.post import Post, SearchPost, SalePost, get_post
+from src.telegrampost import TelegramPost, TelegramSearchPost, TelegramSalePost, get_post
 
 class TestPost:
+    @pytest.fixture(name="mock_message")
+    def mock_message(self, mocker):
+        return mocker.patch("telegram.Message")
+
     @pytest.mark.parametrize(
         argnames="message, expected_type, expected_table_name, expected_game_id",
         argvalues=[
-            ("#lOokingFor monopoly", SearchPost, "search", nullcontext(1406)),
-            ("#seekingInterest Terraforming Mars", SalePost, "sale", nullcontext(167791)),
-            ("#sale Guild of Merchant Explorers", SalePost, "sale", nullcontext(350933)),
-            ("#selling Lost Ruins of Arnak", SalePost, "sale", nullcontext(312484)),
-            ("just a #message no game", Post, "post", pytest.raises(AttributeError))
+            ("#lOokingFor monopoly", TelegramSearchPost, "search", nullcontext(1406)),
+            ("#seekingInterest Terraforming Mars", TelegramSalePost, "sale", nullcontext(167791)),
+            ("#sale Guild of Merchant Explorers", TelegramSalePost, "sale", nullcontext(350933)),
+            ("#selling Lost Ruins of Arnak", TelegramSalePost, "sale", nullcontext(312484)),
+            ("just a #message no game", TelegramPost, "post", pytest.raises(AttributeError))
         ],
         ids=[
             "search", "interest", "sale", "sale-selling", "no-type"
         ]
 
     )
-    def test_get_post(self, message, expected_type, expected_table_name, expected_game_id):
-
+    def test_get_post(self, mock_message, message, expected_type, expected_table_name, expected_game_id):
+        mock_message.text = message
         with expected_game_id as e:
-            post = get_post(message)
+            post = get_post(mock_message)
             assert isinstance(post, expected_type)
             assert post.table_name == expected_table_name
             assert post.game.id == e
@@ -40,9 +43,9 @@ class TestPost:
         ]
 
     )
-    def test_to_db_tuple(self, message, expected_tuple):
-
-        post = get_post(message)
+    def test_to_db_tuple(self, mock_message, message, expected_tuple):
+        mock_message.text = message
+        post = get_post(mock_message)
         assert post.insert_into_db is True
         assert post.to_db_tuple() == expected_tuple
 

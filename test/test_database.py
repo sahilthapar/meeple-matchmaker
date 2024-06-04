@@ -1,7 +1,7 @@
 import pytest
 import sqlite3
 from src.database import init_post_db, read_post_db, write_to_post_db
-from src.post import get_post
+from src.telegrampost import get_post
 
 
 class TestDatabase:
