@@ -2,4 +2,3 @@ venv/
 .idea/
 
 /auth.json
-/src/meeple-market-bot
