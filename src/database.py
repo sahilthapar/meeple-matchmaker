@@ -5,7 +5,7 @@ from sqlite3 import Cursor
 
 def write_to_post_db(cursor: Cursor, posts: list[TelegramPost]):
     sql_tuples = [(
-        post.post_type, post.game.id, post.text, post.user, True
+        post.post_type, post.game_id.id, post.text, post.user_id, True
     ) for post in posts]
     cursor.executemany(
         'INSERT INTO post (post_type, game_id, contents, user, active) VALUES (?,?,?,?,?)',
