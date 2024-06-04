@@ -13,8 +13,7 @@ class Post:
         self.post_type = 'post'
         self.table_name = 'post'
         self.bgg_client = BGGClient()
-        self.game = self.get_game()
-        self.user = 'test'
+        self.game = None
 
     def get_game(self) -> Optional[BoardGame]:
         try:
@@ -33,12 +32,16 @@ class SearchPost(Post):
         super().__init__(contents)
         self.post_type = 'search'
         self.table_name = 'search'
+        self.game = self.get_game()
+        self.user = 'test'
 
 class InterestPost(Post):
     def __init__(self, contents: str):
         super().__init__(contents)
         self.post_type = 'interest'
         self.table_name = 'interest'
+        self.game = self.get_game()
+        self.user = 'test'
 
 
 class SalePost(Post):
@@ -46,6 +49,8 @@ class SalePost(Post):
         super().__init__(contents)
         self.post_type = 'sale'
         self.table_name = 'sale'
+        self.game = self.get_game()
+        self.user = 'test'
 
 
 def get_post(message: str) -> Post:
