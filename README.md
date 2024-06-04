@@ -4,10 +4,9 @@ A telegram bot for meeple market which matches
 
 # How it works?
 
-- Users can post messages with one of the following three tags, followed by a game name to trigger the bot
+- Users can post messages with one of the following two tags, followed by a game name to trigger the bot
   - **#lookingfor, #iso**
-  - **#seekinginterest**
-  - **#selling, #sale**
+  - **#seekinginterest, #selling, #sale**
 - The bot then parses the message using bgg-python-api
   - it tries an exact match and then a fuzzy match to find the game id on bgg
 
