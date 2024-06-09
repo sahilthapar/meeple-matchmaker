@@ -1,9 +1,9 @@
-from src.telegrampost import TelegramPost
+from types import SimpleNamespace
 import sqlite3
 from typing import Optional
 from sqlite3 import Cursor
 
-def write_to_post_db(cursor: Cursor, posts: list[TelegramPost]):
+def write_to_post_db(cursor: Cursor, posts: list[SimpleNamespace]):
     sql_tuples = [(
         post.post_type, post.game_id, post.text, post.user_id, post.user_name, 1
     ) for post in posts]

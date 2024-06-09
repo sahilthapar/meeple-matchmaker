@@ -1,7 +1,7 @@
 import pytest
 import sqlite3
 from src.database import init_post_db, read_post_db, write_to_post_db
-from src.telegrampost import get_post
+from src.telegrampost import parse_message
 
 
 class TestDatabase:
@@ -11,7 +11,7 @@ class TestDatabase:
         message = mocker.patch("telegram.Message")
         message.text = "#seekingInterest Terraforming Mars"
         message.from_user.id = 101
-        return get_post(message)
+        return parse_message(message)
 
     @pytest.fixture(name="sample_data_tuple")
     def sample_data_tuple(self):

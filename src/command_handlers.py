@@ -40,9 +40,6 @@ async def start_command(update, context):
     @Deepak @Chaitanya
     ```
     
-    *Currently the bot only supports messages with the tag and the game name,
-    if you add other info like condition etc it will not work*
-    
     *How do I stop the notifications?*
     You can use messages to do this for specific games
     ```

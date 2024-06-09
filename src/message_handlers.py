@@ -1,18 +1,19 @@
 import sqlite3
+from types import SimpleNamespace
 
 from telegram.ext import ContextTypes
-from telegram import Update, ReactionTypeEmoji
+from telegram import Update
 
 
-from src.telegrampost import get_post
+from src.telegrampost import parse_message
 from src.database import write_to_post_db, read_post_db, disable_posts
-from src.telegrampost import TelegramPost
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     conn = sqlite3.connect("meeple-matchmaker")
     with conn:
-        post = get_post(update.message)
-
+        post = parse_message(update.message)
+        if not post:
+            return
         if post.post_type == "search":
             reply = search_message_handler(conn, post)
             if reply:
@@ -33,7 +34,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     conn.close()
 
-def search_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> str:
+def search_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> str:
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
@@ -41,7 +42,7 @@ def search_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> str:
     if search_posts:
         return ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
 
-def sale_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> str:
+def sale_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> str:
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
@@ -49,12 +50,12 @@ def sale_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> str:
     if search_posts:
         return ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
 
-def sold_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> None:
+def sold_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
     cur = conn.cursor()
     disable_posts(cur, post.user_id, "sell", post.game_id)
     conn.commit()
 
-def found_message_handler(conn: sqlite3.Connection, post: TelegramPost) -> None:
+def found_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
     cur = conn.cursor()
     disable_posts(cur, post.user_id, "search", post.game_id)
     conn.commit()
