@@ -8,6 +8,17 @@ from boardgamegeek.objects.games import BoardGame
 log = getLogger()
 
 
+def get_game_id(game_name: str, bgg_client: BGGClient) -> Optional[BoardGame]:
+    try:
+        log.info("Trying exact match")
+        game_exact = bgg_client.game(game_name, exact=True)
+        if game_exact:
+            return game_exact.id
+    except BGGItemNotFoundError:
+        log.info("Failed to find exact match")
+        game_fuzzy = bgg_client.game(game_name, exact=False)
+        return game_fuzzy.id
+
 class TelegramPost:
     def __init__(self, text: str, user_id: int, user_name: str):
         self.text = text
@@ -20,15 +31,7 @@ class TelegramPost:
         self.insert_into_db = False
 
     def _get_game(self) -> Optional[BoardGame]:
-        try:
-            log.info("Trying exact match")
-            game_exact = self.bgg_client.game(self.text, exact=True)
-            if game_exact:
-                return game_exact.id
-        except BGGItemNotFoundError:
-            log.info("Failed to find exact match")
-            game_fuzzy = self.bgg_client.game(self.text, exact=False)
-            return game_fuzzy.id
+        return get_game_id(self.text, self.bgg_client)
 
     def to_db_tuple(self):
         pass

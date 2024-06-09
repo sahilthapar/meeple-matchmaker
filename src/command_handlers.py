@@ -1,5 +1,7 @@
 import textwrap
+import sqlite3
 
+from src.database import disable_posts
 
 async def start_command(update, context):
     """Send a message when the command /start is issued."""
@@ -38,5 +40,22 @@ async def start_command(update, context):
     @Deepak @Chaitanya
     ```
     
+    ## How do I stop the notifications?
+    Go to the bot chat and type /disable
+    This will stop all tags for you for all games
+    
+    We currently do not support disabling notifications for specific games but watch this space for an update
+    on that
+    
     """
     await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
+
+async def disable_notifications(update, context):
+    conn = sqlite3.connect("meeple-matchmaker")
+    user_id = update.message.from_user.id
+    with conn:
+        cur = conn.cursor()
+        disable_posts(cur, user_id)
+        conn.commit()
+
+    conn.close()
