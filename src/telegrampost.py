@@ -72,9 +72,9 @@ def get_post(message: Message) -> TelegramPost:
     elif '#sale' in msg or '#selling' in msg or "#seekinginterest" in msg or '#sell' in msg:
         text = msg\
             .replace('#sale', '')\
-            .replace('#sell', '')\
             .replace('#selling', '')\
-            .replace('#seekinginterest', '')\
+            .replace('#seekinginterest', '') \
+            .replace('#sell', '') \
             .strip()
         return TelegramSalePost(text, user_id, user_name)
     return TelegramPost(msg, user_id, user_name)

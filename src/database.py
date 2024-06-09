@@ -37,9 +37,11 @@ def init_post_db(cursor):
     """
     cursor.execute(sql)
 
-
-if __name__ == '__main__':
-    con = sqlite3.connect("meeple-matchmaker")
-    cur = con.cursor()
-    init_post_db(cur)
-
+#
+# if __name__ == '__main__':
+#     con = sqlite3.connect("meeple-matchmaker")
+#     cur = con.cursor()
+#     # init_post_db(cur)
+#     rows = cur.execute("SELECT * FROM post")
+#     for row in rows:
+#         print(row)

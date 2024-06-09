@@ -10,18 +10,14 @@ CONN = sqlite3.connect("meeple-matchmaker")
 CURSOR = CONN.cursor()
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print(update.message.text)
     post = get_post(update.message)
-    print(post.to_db_tuple())
     # if the message type is search, just insert into db
     if post.post_type == "search":
         write_to_post_db(CURSOR, [post])
         CONN.commit()
         search_posts = read_post_db(cursor=CURSOR, game_id=post.game_id, post_type="sale")
         if search_posts:
-            print(search_posts)
             html_msg = ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
-            print(html_msg)
             await update.message.reply_text(html_msg, parse_mode='Markdown')
 
     elif post.post_type == "sale":
@@ -29,9 +25,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         CONN.commit()
         search_posts = read_post_db(cursor=CURSOR, game_id=post.game_id, post_type="search")
         if search_posts:
-            print(search_posts)
             html_msg = ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
-            print(html_msg)
             await update.message.reply_text(html_msg, parse_mode='Markdown')
 
     else:
