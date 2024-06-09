@@ -11,9 +11,9 @@ async def start_command(update, context):
     
     I'm here to help match buyers and sellers in the Meeple Market Telegram Channel
         
-    ## How do I work?
+    *How does it work?*
     
-    I use two things from a posted message in the group
+    The bot uses two things from a posted message in the group
     
     - a message tag, supported tags are: #lookingfor, #sale, #selling, #seekinginterest, #sell, #found, #sold
     - a game name, the more accurately your name matches the BGG name, the better your chances of success
@@ -40,11 +40,11 @@ async def start_command(update, context):
     @Deepak @Chaitanya
     ```
     
-    ## How do I stop the notifications?
-    Go to the bot chat and type /disable
-    This will stop all tags for you for all games
+    *Currently the bot only supports messages with the tag and the game name,
+    if you add other info like condition etc it will not work*
     
-    In addition, you can also use messages to do this individually
+    *How do I stop the notifications?*
+    You can use messages to do this for specific games
     ```
     #found Ark Nova
     ``` 
@@ -54,7 +54,13 @@ async def start_command(update, context):
     #sold Ark Nova
     ``` 
     This command will remove you from the user list who are actively selling Ark Nova
-     
+    
+    
+    
+    In addition, if you'd like to stop notifications for all posts
+    Go to the bot chat and type /disable
+    This will stop all tags for you for all games you've already posted about.
+    Note: This does not stop future notifications you might sign up for again
     
     """
     await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
