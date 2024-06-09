@@ -55,7 +55,7 @@ async def disable_notifications(update, context):
     user_id = update.message.from_user.id
     with conn:
         cur = conn.cursor()
-        disable_posts(cur, user_id)
+        disable_posts(cur, user_id, post_type=None, game_id=None)
         conn.commit()
 
     conn.close()

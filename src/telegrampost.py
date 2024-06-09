@@ -55,7 +55,35 @@ class TelegramSalePost(TelegramPost):
     def __init__(self, text: str, user_id: int, user_name: str):
         super().__init__(text, user_id, user_name)
         self.post_type = 'sale'
-        self.table_name = 'sale'
+        self.table_name = 'post'
+        self.game_id = self._get_game()
+        self.user_id = user_id
+        self.user_name = user_name
+        self.insert_into_db = True
+
+    def to_db_tuple(self, active=True) -> Tuple:
+        return self.post_type, self.game_id, self.text, self.user_id, self.user_name, active
+
+
+class TelegramSoldPost(TelegramPost):
+    def __init__(self, text: str, user_id: int, user_name: str):
+        super().__init__(text, user_id, user_name)
+        self.post_type = 'sold'
+        self.table_name = 'post'
+        self.game_id = self._get_game()
+        self.user_id = user_id
+        self.user_name = user_name
+        self.insert_into_db = True
+
+    def to_db_tuple(self, active=True) -> Tuple:
+        return self.post_type, self.game_id, self.text, self.user_id, self.user_name, active
+
+
+class TelegramFoundPost(TelegramPost):
+    def __init__(self, text: str, user_id: int, user_name: str):
+        super().__init__(text, user_id, user_name)
+        self.post_type = 'found'
+        self.table_name = 'post'
         self.game_id = self._get_game()
         self.user_id = user_id
         self.user_name = user_name
@@ -80,5 +108,15 @@ def get_post(message: Message) -> TelegramPost:
             .replace('#sell', '') \
             .strip()
         return TelegramSalePost(text, user_id, user_name)
+    elif '#sold' in msg:
+        text = msg\
+            .replace('#sold', '')\
+            .strip()
+        return TelegramSoldPost(text, user_id, user_name)
+    elif '#found' in msg:
+        text = msg\
+            .replace('#found', '')\
+            .strip()
+        return TelegramFoundPost(text, user_id, user_name)
     return TelegramPost(msg, user_id, user_name)
 

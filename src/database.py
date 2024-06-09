@@ -24,10 +24,18 @@ def read_post_db(cursor: Cursor,
     data = cursor.execute(f"SELECT DISTINCT user_id, user_name FROM post {filter_clause}").fetchall()
     return data
 
-def disable_posts(cursor: Cursor, user_id: str) -> None:
+def disable_posts(cursor: Cursor, user_id: int, post_type: Optional[str], game_id: Optional[int]) -> None:
+    filter_game_id = ""
+    filter_post_type = ""
+    if game_id:
+        filter_game_id = f"AND game_id = {str(game_id)}"
+    if post_type:
+        filter_post_type = f"AND post_type = '{post_type}'"
     sql = f"""
     Update post SET active = 0
     WHERE user_id = '{str(user_id)}'
+    {filter_game_id}
+    {filter_post_type}
     """
     cursor.execute(sql)
 
