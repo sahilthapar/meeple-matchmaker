@@ -42,7 +42,7 @@ def disable_posts(cursor: Cursor, user_id: int, post_type: Optional[str], game_i
 
 def init_post_db(cursor):
     sql = """
-        CREATE TABLE post(
+        CREATE TABLE IF NOT EXISTS post(
             post_type VARCHAR,
             game_id INTERGER,
             text VARCHAR,
