@@ -15,7 +15,7 @@ async def start_command(update, context):
     
     I use two things from a posted message in the group
     
-    - a message tag, supported tags are: #lookingfor, #sale, #selling, #seekinginterest, #sell
+    - a message tag, supported tags are: #lookingfor, #sale, #selling, #seekinginterest, #sell, #found, #sold
     - a game name, the more accurately your name matches the BGG name, the better your chances of success
         
     Example:
@@ -44,8 +44,17 @@ async def start_command(update, context):
     Go to the bot chat and type /disable
     This will stop all tags for you for all games
     
-    We currently do not support disabling notifications for specific games but watch this space for an update
-    on that
+    In addition, you can also use messages to do this individually
+    ```
+    #found Ark Nova
+    ``` 
+    This command will remove you from the user list who are actively searching for Ark Nova
+    
+    ```
+    #sold Ark Nova
+    ``` 
+    This command will remove you from the user list who are actively selling Ark Nova
+     
     
     """
     await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
