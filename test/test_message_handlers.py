@@ -99,12 +99,3 @@ class TestMessageHandlers:
             await message_handler(mock_update, mock_context)
 
             mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
-
-        pass
-
-
-
-
-
-
-        # see the response is expected
