@@ -68,7 +68,9 @@ class TestMessageHandlers:
                     "[alpha](tg://user?id=101), [beta](tg://user?id=102)"
                 ]
             ),
-
+            # todo: simple scenario with sold
+            # todo: simple scenario with found
+            # todo: scenario with disable notifications in between
         ],
         ids=[
             "scenario1-simple-sales-followed-by-a-search",
