@@ -52,7 +52,7 @@ def sale_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> str
 
 def sold_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
     cur = conn.cursor()
-    disable_posts(cur, post.user_id, "sell", post.game_id)
+    disable_posts(cur, post.user_id, "sale", post.game_id)
     conn.commit()
 
 def found_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
