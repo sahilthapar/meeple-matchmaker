@@ -4,7 +4,10 @@ install:
 lint:
 	ruff check
 	mypy src
-	mypy test
+	mypy tests
+
+test:
+	pytest
 
 start_bot:
 	python ./src/bot.py

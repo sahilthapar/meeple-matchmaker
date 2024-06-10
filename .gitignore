@@ -5,4 +5,6 @@ venv/
 
 
 /meeple-matchmaker
-/test/test-database
+/tests/test-database
+/test-database
+/.coverage
