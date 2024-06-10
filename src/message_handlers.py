@@ -6,8 +6,8 @@ from telegram.ext import ContextTypes
 from telegram import Update
 
 
-from src.telegrampost import parse_message
-from src.database import write_to_post_db, read_post_db, disable_posts
+from telegrampost import parse_message
+from database import write_to_post_db, read_post_db, disable_posts
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     conn = sqlite3.connect("meeple-matchmaker")

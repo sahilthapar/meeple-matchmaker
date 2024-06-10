@@ -1,7 +1,7 @@
 import telegram.ext.filters
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
-from src.message_handlers import message_handler
-from src.command_handlers import start_command, disable_command
+from message_handlers import message_handler
+from command_handlers import start_command, disable_command
 import json
 
 

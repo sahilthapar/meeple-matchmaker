@@ -1,7 +1,7 @@
 import textwrap
 import sqlite3
 
-from src.database import disable_posts
+from database import disable_posts
 
 async def start_command(update, context):
     """Send a message when the command /start is issued."""
