@@ -1,5 +1,5 @@
 from telegram import Message
-from typing import Optional, Tuple
+from typing import Optional
 from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError
 from boardgamegeek.objects.games import BoardGame

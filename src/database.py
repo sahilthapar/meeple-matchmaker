@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-import sqlite3
 from typing import Optional
 from sqlite3 import Cursor
 
