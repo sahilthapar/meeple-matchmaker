@@ -1,5 +1,5 @@
 import pytest
-from boardgamegeek import BGGClient
+from boardgamegeek import BGGClient  #type: ignore
 from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, get_game_id, parse_message
 
 

@@ -1,8 +1,8 @@
 from telegram import Message
 from typing import Optional
 from logging import getLogger
-from boardgamegeek import BGGClient, BGGItemNotFoundError
-from boardgamegeek.objects.games import BoardGame
+from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
+from boardgamegeek.objects.games import BoardGame  # type: ignore
 from types import SimpleNamespace
 import re
 
@@ -48,12 +48,13 @@ def get_game_id(game_name: str, bgg_client: BGGClient) -> Optional[BoardGame]:
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return None
+    return None
 
 
 def parse_message(message: Message) -> Optional[SimpleNamespace]:
-    raw_text = message.text.lower()
-    user_id = message.from_user.id
-    user_name = message.from_user.first_name
+    raw_text = message.text.lower() if message.text else ""
+    user_id = message.from_user.id if message.from_user else None
+    user_name = message.from_user.first_name if message.from_user else None
 
     tag = parse_tag(raw_text)
     message_without_tag = raw_text.replace(tag, "").strip()
