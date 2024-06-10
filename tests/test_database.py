@@ -1,6 +1,6 @@
 import pytest
 import sqlite3
-from src.database import init_post_db, read_post_db, write_to_post_db
+from src.database import init_post_db, read_post_db, write_to_post_db, disable_posts
 from src.telegrampost import parse_message
 
 
@@ -23,7 +23,7 @@ class TestDatabase:
         return [
             ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
             ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1),
-            ('sale', 167791, '#selling terraforming mars', '101', 'Jacob', 1),
+            ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
             ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1),
         ]
 
@@ -72,5 +72,44 @@ class TestDatabase:
         # by game id
         data = read_post_db(cursor, game_id=167791, post_type="sale")
         assert list(data) == expected_data
+
+    @pytest.mark.parametrize(
+        argnames="post_type,game_id,expected_data",
+        argvalues=[
+            # disable_all
+            (None, None, []),
+            # disable terraforming sale for Jacob
+            (
+                'sale',
+                167791,
+                [
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1),
+                ]
+            ),
+            # disable monopoly search for Jacob
+            (
+                'search',
+                123,
+                [
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
+                ]
+            )
+        ],
+        ids=["disable_all", "disable_sold_tfm", "disable_found_monopoly"]
+    )
+    def test_disable_posts_all(self, con, cursor, post, sample_data_tuples, post_type, game_id, expected_data):
+        init_post_db(cursor)
+        cursor.executemany(
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            sample_data_tuples
+        )
+        con.commit()
+        # by game id
+        disable_posts(cursor, user_id=101, post_type=post_type, game_id=game_id)
+        data = cursor.execute("SELECT * FROM post WHERE user_id = 101 and active = 1")
+        assert list(data) == expected_data
+
 
 
