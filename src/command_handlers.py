@@ -42,27 +42,29 @@ async def start_command(update, context):
     
     *How do I stop the notifications?*
     You can use messages to do this for specific games
+    
+    This command will remove you from the user list who are actively searching for Ark Nova
     ```
     #found Ark Nova
     ``` 
-    This command will remove you from the user list who are actively searching for Ark Nova
     
+    This command will remove you from the user list who are actively selling Ark Nova
     ```
     #sold Ark Nova
     ``` 
-    This command will remove you from the user list who are actively selling Ark Nova
-    
-    
     
     In addition, if you'd like to stop notifications for all posts
     Go to the bot chat and type /disable
     This will stop all tags for you for all games you've already posted about.
-    Note: This does not stop future notifications you might sign up for again
+    *Note:* This does not stop future notifications you might sign up for again
     
+    
+    *Please do not post any feedback / comments / suggestions / bugs / requests on the Meeple Market Channel
+    Use the chit chat channel or [Github](https://github.com/sahilthapar/meeple-matchmaker)*
     """
     await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
 
-async def disable_notifications(update, context):
+async def disable_command(update, context):
     conn = sqlite3.connect("meeple-matchmaker")
     user_id = update.message.from_user.id
     with conn:
