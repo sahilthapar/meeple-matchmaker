@@ -8,3 +8,6 @@ venv/
 /tests/test-database
 /test-database
 /.coverage
+/database/meeple-matchmaker.db
+/database/test.db
+/test.db

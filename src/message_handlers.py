@@ -10,7 +10,8 @@ from src.telegrampost import parse_message
 from src.database import write_to_post_db, read_post_db, disable_posts
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    conn = sqlite3.connect("meeple-matchmaker")
+    conn = sqlite3.connect("database/meeple-matchmaker.db")
+
     with conn:
         post = parse_message(update.message) if update.message else None
         if not post:
