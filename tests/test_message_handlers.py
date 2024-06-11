@@ -32,6 +32,7 @@ class TestMessageHandlers:
         f = asyncio.Future()
         f.set_result('text')
         update.message.reply_text.return_value = f
+        update.message.set_reaction.return_value = f
 
         return update
 
@@ -99,3 +100,4 @@ class TestMessageHandlers:
             await message_handler(mock_update, mock_context)
 
             mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
+            mock_update.message.set_reaction.assert_called_once_with("👍")

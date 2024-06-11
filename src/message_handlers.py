@@ -20,20 +20,19 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply = search_message_handler(conn, post)
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
-                await update.message.set_reaction("👍")
 
         elif post.post_type == "sale" and update.message:
             reply = sale_message_handler(conn, post)
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
-                await update.message.set_reaction("👍")
 
         elif post.post_type == "sold" and update.message:
             sold_message_handler(conn, post)
-            await update.message.set_reaction("👍")
 
         elif post.post_type == "found" and update.message:
             found_message_handler(conn, post)
+
+        if post.game_id:
             await update.message.set_reaction("👍")
 
     conn.close()
