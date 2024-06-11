@@ -18,11 +18,14 @@ TYPE_LOOKUP = {
     "#sell": "sale",
     "#sold": "sold",
     "#found": "found",
+    "#iso": "search",
+    "#looking": "search",
+    "#auction": "sale",
 }
 
 def parse_tag(message: str) -> str:
     tag = re.search(
-        pattern="^#lookingfor|^#sale|^#selling|^#seekinginterest|^#sell|^#sold|^#found",
+        pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#seekinginterest|^#sell|^#auction|^#sold|^#found",
         string=message
     )
     if not tag:

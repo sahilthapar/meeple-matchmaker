@@ -23,9 +23,13 @@ class TestMessageParsing:
             ("#sell Ark Nova", "#sell"),
             ("#sold Ark Nova", "#sold"),
             ("#found Ark Nova", "#found"),
+            ("#auction Ark Nova", "#auction"),
+            ("#iso Ark Nova", "#iso"),
+            ("#looking Ark Nova", "#looking"),
         ],
         ids=[
-            "search", "sale", "sale-selling", "sale-seekinginterest", "sale-sell", "sold", "found"
+            "search", "sale", "sale-selling", "sale-seekinginterest", "sale-sell",
+            "sold", "found", "sale-auction", "search-iso", "search-looking"
         ]
     )
     def test_parse_tag(self, message, expected):
@@ -41,6 +45,9 @@ class TestMessageParsing:
             ("#sell", "sale"),
             ("#sold", "sold"),
             ("#found", "found"),
+            ("#iso", "search"),
+            ("#looking", "search"),
+            ("#auction", "sale"),
         ],
         ids=[
             "lookingfor",
@@ -50,6 +57,9 @@ class TestMessageParsing:
             "sell",
             "sold",
             "found",
+            "iso",
+            "looking",
+            "auction",
         ]
     )
     def test_type_lookup(self, tag, expected):
