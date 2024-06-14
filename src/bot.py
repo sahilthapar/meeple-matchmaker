@@ -4,6 +4,10 @@ from src.message_handlers import message_handler
 from src.command_handlers import (start_command, disable_command,
                                   list_all_active_sales, list_all_active_searches, list_my_active_posts)
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("meeple-matchmaker")
 
 
 if __name__ == "__main__":
@@ -21,4 +25,5 @@ if __name__ == "__main__":
         # message handlers
         app.add_handler(MessageHandler(telegram.ext.filters.TEXT, message_handler))
 
+        log.info("Bot is ready!")
         app.run_polling()

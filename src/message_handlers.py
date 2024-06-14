@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from types import SimpleNamespace
 from typing import Optional
@@ -9,10 +10,15 @@ from telegram import Update
 from src.telegrampost import parse_message
 from src.database import write_to_post_db, read_post_db, disable_posts
 
+log = logging.getLogger("meeple-matchmaker")
+
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     conn = sqlite3.connect("database/meeple-matchmaker.db")
 
     with conn:
+
+        log.info("Attempting to parse message")
+        log.info(update.message.text)
         post = parse_message(update.message) if update.message else None
         if not post:
             return
