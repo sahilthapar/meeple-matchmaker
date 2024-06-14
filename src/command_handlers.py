@@ -1,7 +1,35 @@
 import textwrap
 import sqlite3
+from typing import Tuple, Optional
+from boardgamegeek import BGGClient
 
-from database import disable_posts
+from src.database import disable_posts, read_user_posts
+
+def format_post(post: tuple, bgg_client: BGGClient) -> str:
+    game_id = post[1]
+    user_id = post[3]
+    user_name = post[4]
+    game = bgg_client.game(game_id=game_id)
+    return f"{game.name}: [{user_name}](tg://user?id={user_id})"
+
+def format_list_of_posts(posts: list[Tuple]) -> str:
+    bgg_client = BGGClient()
+    active_sales = filter(lambda x: x[0] == 'sale', posts)
+    active_searches = filter(lambda x: x[0] == 'search', posts)
+
+    formatted_sales = ""
+    formatted_searches = ""
+    if any(active_sales):
+        formatted_sales = "\nActive sales:\n" + "\n".join(
+            [format_post(x, bgg_client) for x in active_sales]
+        )
+    if any(active_searches):
+        formatted_searches = "\nActive searches:\n" + "\n".join(
+            [format_post(x, bgg_client) for x in active_searches]
+        )
+
+    reply = f"{formatted_sales}\n{formatted_searches}"
+    return textwrap.dedent(reply)
 
 async def start_command(update, context):
     """Send a message when the command /start is issued."""
@@ -65,11 +93,42 @@ async def start_command(update, context):
     await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
 
 async def disable_command(update, context):
-    conn = sqlite3.connect("meeple-matchmaker")
+    conn = sqlite3.connect("database/meeple-matchmaker.db")
     user_id = update.message.from_user.id
     with conn:
         cur = conn.cursor()
         disable_posts(cur, user_id, post_type=None, game_id=None)
         conn.commit()
 
+    conn.close()
+
+async def list_all_active_sales(update, context):
+    conn = sqlite3.connect("database/meeple-matchmaker.db")
+    with conn:
+        cur = conn.cursor()
+        data = read_user_posts(cur, user_id=None, post_type="sale")
+        conn.commit()
+        reply = format_list_of_posts(data)
+        await update.message.reply_text(reply, parse_mode="Markdown")
+    conn.close()
+
+async def list_all_active_searches(update, context):
+    conn = sqlite3.connect("database/meeple-matchmaker.db")
+    with conn:
+        cur = conn.cursor()
+        data = read_user_posts(cur, user_id=None, post_type="search")
+        conn.commit()
+        reply = format_list_of_posts(data)
+        await update.message.reply_text(reply, parse_mode="Markdown")
+    conn.close()
+
+async def list_my_active_posts(update, context):
+    conn = sqlite3.connect("database/meeple-matchmaker.db")
+    with conn:
+        cur = conn.cursor()
+        user_id = update.message.from_user.id
+        data = read_user_posts(cur, user_id=user_id, post_type=None)
+        conn.commit()
+        reply = format_list_of_posts(data)
+        await update.message.reply_text(reply, parse_mode="Markdown")
     conn.close()
