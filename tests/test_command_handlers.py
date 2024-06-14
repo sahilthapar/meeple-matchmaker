@@ -19,10 +19,9 @@ class TestCommandHandlers:
         return BGGClient()
 
     @pytest.mark.parametrize(
-        argnames="post_type,posts,expected_reply",
+        argnames="posts,expected_reply",
         argvalues=[
             (
-                "sale",
                 [
                     ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
                     ('sale', 167791, '#seekinginterest terraforming mars', '103', 'Vikrant', 1),
@@ -31,22 +30,20 @@ class TestCommandHandlers:
                 "\nActive sales:"
                 "\nTerraforming Mars: [Jacob](tg://user?id=101)"
                 "\nTerraforming Mars: [Vikrant](tg://user?id=103)"
-                "\nArk Nova: [Jacob](tg://user?id=101)"""
+                "\nArk Nova: [Jacob](tg://user?id=101)\n"
             ),
             (
-                "search",
                 [
                     ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1),
                     ('search', 1406, '#lookingfor monopoly', '101', 'Jacob', 1),
                     ('search', 1406, '#lookingfor monopoly', '102', 'Henry', 1),
                 ],
-                "\nActive searches:"
+                "\n\nActive searches:"
                 "\nTerraforming Mars: [Henry](tg://user?id=102)"
                 "\nMonopoly: [Jacob](tg://user?id=101)"
                 "\nMonopoly: [Henry](tg://user?id=102)"
             ),
             (
-                None,
                 [
                     ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
                     ('sale', 167791, '#seekinginterest terraforming mars', '103', 'Vikrant', 1),
@@ -59,6 +56,7 @@ class TestCommandHandlers:
                 "\nTerraforming Mars: [Jacob](tg://user?id=101)"
                 "\nTerraforming Mars: [Vikrant](tg://user?id=103)"
                 "\nArk Nova: [Jacob](tg://user?id=101)"
+                "\n"
                 "\nActive searches:"
                 "\nTerraforming Mars: [Henry](tg://user?id=102)"
                 "\nMonopoly: [Jacob](tg://user?id=101)"
@@ -72,8 +70,8 @@ class TestCommandHandlers:
         ]
 
     )
-    def test_format_list_of_posts(self, post_type, posts, expected_reply):
-        assert format_list_of_posts(posts, post_type) == textwrap.dedent(expected_reply)
+    def test_format_list_of_posts(self, posts, expected_reply):
+        assert format_list_of_posts(posts) == textwrap.dedent(expected_reply)
 
     @pytest.mark.parametrize(
         argnames="post,expected_response",

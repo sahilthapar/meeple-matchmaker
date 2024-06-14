@@ -14,16 +14,16 @@ def format_post(post: tuple, bgg_client: BGGClient) -> str:
 
 def format_list_of_posts(posts: list[Tuple]) -> str:
     bgg_client = BGGClient()
-    active_sales = filter(lambda x: x[0] == 'sale', posts)
-    active_searches = filter(lambda x: x[0] == 'search', posts)
+    active_sales = list(filter(lambda x: x[1] is not None and x[0] == 'sale', posts))
+    active_searches = list(filter(lambda x: x[1] is not None and x[0] == 'search', posts))
 
     formatted_sales = ""
     formatted_searches = ""
-    if any(active_sales):
+    if active_sales:
         formatted_sales = "\nActive sales:\n" + "\n".join(
             [format_post(x, bgg_client) for x in active_sales]
         )
-    if any(active_searches):
+    if active_searches:
         formatted_searches = "\nActive searches:\n" + "\n".join(
             [format_post(x, bgg_client) for x in active_searches]
         )
