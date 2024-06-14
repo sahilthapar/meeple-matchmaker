@@ -1,6 +1,6 @@
 import pytest
 import sqlite3
-from src.database import init_post_db, read_post_db, write_to_post_db, disable_posts
+from src.database import init_post_db, read_post_db, write_to_post_db, disable_posts, read_user_posts
 from src.telegrampost import parse_message
 
 
@@ -24,7 +24,9 @@ class TestDatabase:
             ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
             ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1),
             ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
+            ('sale', 999, '#selling destinies', '104', 'Marcus', 0),
             ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1),
+            ('search', 345, '#lookingfor wingspan', '103', 'Cristiano', 0),
         ]
 
     @pytest.fixture(name="con")
@@ -110,6 +112,53 @@ class TestDatabase:
         disable_posts(cursor, user_id=101, post_type=post_type, game_id=game_id)
         data = cursor.execute("SELECT * FROM post WHERE user_id = 101 and active = 1")
         assert list(data) == expected_data
+
+    @pytest.mark.parametrize(
+        argnames="post_type, user_id, expected_data",
+        argvalues=[
+            (
+                "sale",
+                None,
+                [
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob'),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob'),
+                ]
+            ),
+            (
+                "search",
+                None,
+                [
+                    ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry'),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob'),
+                ]
+            ),
+            (
+                None,
+                101,
+                [
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob'),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob'),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob'),
+                ]
+            ),
+        ],
+        ids=[
+            "list_all_active_sales",
+            "list_all_active_searches",
+            "list_all_active_posts_for_user"
+        ]
+    )
+    def test_read_user_posts(self, con, cursor, post, sample_data_tuples,
+                             post_type, user_id, expected_data):
+        init_post_db(cursor)
+        cursor.executemany(
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            sample_data_tuples
+        )
+        con.commit()
+        data = read_user_posts(cursor, post_type=post_type, user_id=user_id)
+        assert list(data) == expected_data
+
 
 
 

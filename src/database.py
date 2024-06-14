@@ -1,6 +1,7 @@
 from types import SimpleNamespace
-from typing import Optional
+from typing import Optional, Tuple
 from sqlite3 import Cursor
+
 
 def write_to_post_db(cursor: Cursor, posts: list[SimpleNamespace]):
     sql_tuples = [(
@@ -14,7 +15,7 @@ def write_to_post_db(cursor: Cursor, posts: list[SimpleNamespace]):
 
 def read_post_db(cursor: Cursor,
                  game_id: int,
-                 post_type: str):
+                 post_type: str) -> list[Tuple]:
     filter_clause = f"""
         WHERE game_id = {str(game_id)}
         AND post_type = "{post_type}"
@@ -22,6 +23,29 @@ def read_post_db(cursor: Cursor,
     """
     data = cursor.execute(f"SELECT DISTINCT user_id, user_name FROM post {filter_clause}").fetchall()
     return data
+
+
+def read_user_posts(cursor: Cursor,
+                    user_id: int,
+                    post_type: str) -> list[Tuple]:
+    filter_user_id = ""
+    filter_post_type = ""
+    if user_id:
+        filter_user_id = f"AND user_id = {str(user_id)}"
+    if post_type:
+        filter_post_type = f"AND post_type = '{post_type}'"
+
+    sql = f"""
+        SELECT distinct post_type, game_id, text, user_id, user_name
+        FROM post
+        WHERE active = 1
+        {filter_user_id}
+        {filter_post_type}
+    """
+
+    data = cursor.execute(sql).fetchall()
+    return data
+
 
 def disable_posts(cursor: Cursor, user_id: int, post_type: Optional[str], game_id: Optional[int]) -> None:
     filter_game_id = ""
