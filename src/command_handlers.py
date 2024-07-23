@@ -113,6 +113,7 @@ async def list_all_active_sales(update, context):
         conn = sqlite3.connect("database/meeple-matchmaker.db")
         with conn:
             cur = conn.cursor()
+            cur.arraysize = 100
             data = read_user_posts(cur, user_id=None, post_type="sale")
             conn.commit()
             reply = format_list_of_posts(data)
@@ -126,6 +127,7 @@ async def list_all_active_searches(update, context):
         conn = sqlite3.connect("database/meeple-matchmaker.db")
         with conn:
             cur = conn.cursor()
+            cur.arraysize = 100
             data = read_user_posts(cur, user_id=None, post_type="search")
             conn.commit()
             reply = format_list_of_posts(data)
@@ -139,6 +141,7 @@ async def list_my_active_posts(update, context):
         conn = sqlite3.connect("database/meeple-matchmaker.db")
         with conn:
             cur = conn.cursor()
+            cur.arraysize = 100
             user_id = update.message.from_user.id
             data = read_user_posts(cur, user_id=user_id, post_type=None)
             conn.commit()
