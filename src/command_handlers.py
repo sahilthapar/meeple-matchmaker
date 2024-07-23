@@ -2,6 +2,7 @@ import textwrap
 import sqlite3
 from typing import Tuple, Optional
 from boardgamegeek import BGGClient
+from telegram.constants import ChatType
 
 from src.database import disable_posts, read_user_posts
 
@@ -90,7 +91,10 @@ async def start_command(update, context):
     *Please do not post any feedback / comments / suggestions / bugs / requests on the Meeple Market Channel
     Use the chit chat channel or [Github](https://github.com/sahilthapar/meeple-matchmaker)*
     """
-    await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
+    if update.effective_chat.type == ChatType.GROUP:
+        await update.message.set_reaction("👎")
+    else:
+        await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
 
 async def disable_command(update, context):
     conn = sqlite3.connect("database/meeple-matchmaker.db")
@@ -103,32 +107,41 @@ async def disable_command(update, context):
     conn.close()
 
 async def list_all_active_sales(update, context):
-    conn = sqlite3.connect("database/meeple-matchmaker.db")
-    with conn:
-        cur = conn.cursor()
-        data = read_user_posts(cur, user_id=None, post_type="sale")
-        conn.commit()
-        reply = format_list_of_posts(data)
-        await update.message.reply_text(reply, parse_mode="Markdown")
-    conn.close()
+    if update.effective_chat.type == ChatType.GROUP:
+        await update.message.set_reaction("👎")
+    else:
+        conn = sqlite3.connect("database/meeple-matchmaker.db")
+        with conn:
+            cur = conn.cursor()
+            data = read_user_posts(cur, user_id=None, post_type="sale")
+            conn.commit()
+            reply = format_list_of_posts(data)
+            await update.message.reply_text(reply, parse_mode="Markdown")
+        conn.close()
 
 async def list_all_active_searches(update, context):
-    conn = sqlite3.connect("database/meeple-matchmaker.db")
-    with conn:
-        cur = conn.cursor()
-        data = read_user_posts(cur, user_id=None, post_type="search")
-        conn.commit()
-        reply = format_list_of_posts(data)
-        await update.message.reply_text(reply, parse_mode="Markdown")
-    conn.close()
+    if update.effective_chat.type == ChatType.GROUP:
+        await update.message.set_reaction("👎")
+    else:
+        conn = sqlite3.connect("database/meeple-matchmaker.db")
+        with conn:
+            cur = conn.cursor()
+            data = read_user_posts(cur, user_id=None, post_type="search")
+            conn.commit()
+            reply = format_list_of_posts(data)
+            await update.message.reply_text(reply, parse_mode="Markdown")
+        conn.close()
 
 async def list_my_active_posts(update, context):
-    conn = sqlite3.connect("database/meeple-matchmaker.db")
-    with conn:
-        cur = conn.cursor()
-        user_id = update.message.from_user.id
-        data = read_user_posts(cur, user_id=user_id, post_type=None)
-        conn.commit()
-        reply = format_list_of_posts(data)
-        await update.message.reply_text(reply, parse_mode="Markdown")
-    conn.close()
+    if update.effective_chat.type == ChatType.GROUP:
+        await update.message.set_reaction("👎")
+    else:
+        conn = sqlite3.connect("database/meeple-matchmaker.db")
+        with conn:
+            cur = conn.cursor()
+            user_id = update.message.from_user.id
+            data = read_user_posts(cur, user_id=user_id, post_type=None)
+            conn.commit()
+            reply = format_list_of_posts(data)
+            await update.message.reply_text(reply, parse_mode="Markdown")
+        conn.close()
