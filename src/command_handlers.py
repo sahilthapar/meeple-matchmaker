@@ -2,38 +2,59 @@ import textwrap
 import sqlite3
 import logging
 from typing import Tuple, Optional
-from boardgamegeek import BGGClient, CacheBackendMemory
+from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
+from sqlite3 import Cursor
 
-from src.database import disable_posts, read_user_posts
+from src.database import disable_posts, read_user_posts, update_game_name
 
 log = logging.getLogger("meeple-matchmaker")
 
-def format_post(post: tuple, bgg_client: BGGClient) -> str:
+def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
     game_id = post[1]
+    text = post[2]
     user_id = post[3]
     user_name = post[4]
-    game = bgg_client.game(game_id=game_id)
-    return f"{game.name}: [{user_name}](tg://user?id={user_id})"
+    game_name = post[5]
+    if not game_name:
+        log.warning("Game name not found in database, searching BGG")
+        game = None
+        try:
+            game = bgg_client.game(game_id=game_id)
+        except BGGApiError:
+            log.error(f"text: {text}")
+            log.error(f"game_id: {game_id}")
+            log.error(f"BGGAPIError")
+        if game:
+            game_name = game.name
+            # todo: update game name in the entire database
+            update_game_name(cursor, game.id, game.name)
 
-def format_list_of_posts(posts: list[Tuple]) -> str:
+    return f"{game_name}: [{user_name}](tg://user?id={user_id})"
+
+def format_list_of_posts(cursor: Cursor, posts: list[Tuple]) -> str:
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
     active_sales = list(filter(lambda x: x[1] is not None and x[0] == 'sale', posts))
     active_searches = list(filter(lambda x: x[1] is not None and x[0] == 'search', posts))
 
-    formatted_sales = ""
-    formatted_searches = ""
-    if active_sales:
-        formatted_sales = "\nActive sales:\n" + "\n".join(
-            [format_post(x, bgg_client) for x in active_sales]
-        )
-    if active_searches:
-        formatted_searches = "\nActive searches:\n" + "\n".join(
-            [format_post(x, bgg_client) for x in active_searches]
-        )
+    sale_count = len(active_sales)
+    search_count = len(active_searches)
+    max_count = max(sale_count, search_count)
+    for i in range(0, max_count, 100):
 
-    reply = f"{formatted_sales}\n{formatted_searches}"
-    return textwrap.dedent(reply)
+        formatted_sales = ""
+        formatted_searches = ""
+
+        if active_sales:
+            formatted_sales = "\nActive sales:\n" + "\n".join(
+                [format_post(cursor, x, bgg_client) for x in active_sales[i:min(i+100, sale_count)]]
+            )
+        if active_searches:
+            formatted_searches = "\nActive searches:\n" + "\n".join(
+                [format_post(cursor, x, bgg_client) for x in active_searches[i:min(i+100, search_count)]]
+            )
+        reply = f"{formatted_sales}\n{formatted_searches}"
+        yield textwrap.dedent(reply)
 
 async def start_command(update, context):
     """Send a message when the command /start is issued."""
@@ -120,9 +141,10 @@ async def list_all_active_sales(update, context):
             cur = conn.cursor()
             cur.arraysize = 100
             data = read_user_posts(cur, user_id=None, post_type="sale")
-            conn.commit()
-            reply = format_list_of_posts(data)
-            await update.message.reply_text(reply, parse_mode="Markdown")
+            reply = format_list_of_posts(cur, data)
+            for part in reply:
+                conn.commit()
+                await update.message.reply_text(part, parse_mode="Markdown")
         conn.close()
 
 async def list_all_active_searches(update, context):
@@ -135,9 +157,10 @@ async def list_all_active_searches(update, context):
             cur = conn.cursor()
             cur.arraysize = 100
             data = read_user_posts(cur, user_id=None, post_type="search")
-            conn.commit()
-            reply = format_list_of_posts(data)
-            await update.message.reply_text(reply, parse_mode="Markdown")
+            reply = format_list_of_posts(cur, data)
+            for part in reply:
+                conn.commit()
+                await update.message.reply_text(part, parse_mode="Markdown")
         conn.close()
 
 async def list_my_active_posts(update, context):
@@ -152,6 +175,6 @@ async def list_my_active_posts(update, context):
             user_id = update.message.from_user.id
             data = read_user_posts(cur, user_id=user_id, post_type=None)
             conn.commit()
-            reply = format_list_of_posts(data)
+            reply = format_list_of_posts(cur, data)
             await update.message.reply_text(reply, parse_mode="Markdown")
         conn.close()
