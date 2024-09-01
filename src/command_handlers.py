@@ -27,7 +27,6 @@ def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
             log.error(f"BGGAPIError")
         if game:
             game_name = game.name
-            # todo: update game name in the entire database
             update_game_name(cursor, game.id, game.name)
 
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
