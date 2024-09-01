@@ -16,17 +16,17 @@ class TestDatabase:
 
     @pytest.fixture(name="sample_data_tuple")
     def sample_data_tuple(self):
-        return 'sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1
+        return 'sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, 'Terraforming Mars'
 
     @pytest.fixture(name="sample_data_tuples")
     def sample_data_tuples(self):
         return [
-            ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
-            ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1),
-            ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
-            ('sale', 999, '#selling destinies', '104', 'Marcus', 0),
-            ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1),
-            ('search', 345, '#lookingfor wingspan', '103', 'Cristiano', 0),
+            ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, 'Terraforming Mars'),
+            ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1, 'Terraforming Mars'),
+            ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, 'Ark Nova'),
+            ('sale', 999, '#selling destinies', '104', 'Marcus', 0, 'Destinies'),
+            ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1, 'Monopoly'),
+            ('search', 345, '#lookingfor wingspan', '103', 'Cristiano', 0, 'Wingspan'),
         ]
 
     @pytest.fixture(name="con")

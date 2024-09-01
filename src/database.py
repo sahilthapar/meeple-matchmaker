@@ -5,10 +5,10 @@ from sqlite3 import Cursor
 
 def write_to_post_db(cursor: Cursor, posts: list[SimpleNamespace]):
     sql_tuples = [(
-        post.post_type, post.game_id, post.text, post.user_id, post.user_name, 1
+        post.post_type, post.game_id, post.text, post.user_id, post.user_name, 1, post.game_name
     ) for post in posts]
     cursor.executemany(
-        'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+        'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
         sql_tuples
     )
 
@@ -72,7 +72,8 @@ def init_post_db(cursor):
             text VARCHAR,
             user_id VARCHAR,
             user_name VARCHAR,
-            active BOOLEAN
+            active BOOLEAN,
+            game_name VARCHAR
         )
     """
     cursor.execute(sql)
