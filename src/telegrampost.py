@@ -1,5 +1,5 @@
 from telegram import Message
-from typing import Optional
+from typing import Optional, Tuple
 from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
 from boardgamegeek.objects.games import BoardGame  # type: ignore
@@ -36,21 +36,21 @@ def parse_game_name(message: str) -> str:
     first_line = message.strip().split("\n")[0]
     return first_line
 
-def get_game(game_name: str, bgg_client: BGGClient) -> Optional[BoardGame]:
+def get_game_details(game_name: str, bgg_client: BGGClient) -> Tuple:
     try:
         log.info("Trying exact match")
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
-            return game_exact
+            return game_exact.id, game_exact.name
     except BGGItemNotFoundError:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
             game_fuzzy = bgg_client.game(game_name, exact=False)
-            return game_fuzzy
+            return game_fuzzy.id, game_fuzzy.name
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
-            return None
-    return None
+            return None, None
+    return None, None
 
 def parse_message(message: Message) -> Optional[SimpleNamespace]:
     raw_text = message.text.lower() if message.text else ""
@@ -64,17 +64,17 @@ def parse_message(message: Message) -> Optional[SimpleNamespace]:
         return None
     game_name = parse_game_name(message_without_tag)
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7))
-    game = get_game(game_name, bgg_client)
-    if not game:
+    game_id, game_name = get_game_details(game_name, bgg_client)
+    if not game_id:
         log.warning("Game not found")
         return None
     return SimpleNamespace(
         post_type=message_type,
         text=raw_text,
-        game_id=game.id,
+        game_id=game_id,
         user_id=user_id,
         user_name=user_name,
-        game_name=game.name,
-        to_db_tuple=(message_type, game.id, raw_text, user_id, user_name, 1, game_name)
+        game_name=game_name,
+        to_db_tuple=(message_type, game_id, raw_text, user_id, user_name, 1, game_name)
     )
 

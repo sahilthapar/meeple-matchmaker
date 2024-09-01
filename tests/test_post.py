@@ -1,13 +1,13 @@
 import pytest
-from boardgamegeek import BGGClient  #type: ignore
-from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, get_game_id, parse_message
+from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
+from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details
 
 
 class TestMessageParsing:
 
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
-        return BGGClient()
+        return BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
 
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
@@ -108,37 +108,39 @@ class TestMessageParsing:
         assert parse_game_name(message) == expected
 
     @pytest.mark.parametrize(
-        argnames="game_name, expected_game_id",
+        argnames="game_name, expected_game_id, expected_game_name",
         argvalues=[
-            ("monopoly", 1406),
-            ("terraforming mars", 167791),
-            ("guild of merchant explorers", 350933),
-            ("lost ruins of arnak", 312484),
-            ("just a #message no game", None)
+            ("monopoly", 1406, "Monopoly"),
+            ("terraforming mars", 167791, "Terraforming Mars"),
+            ("guild of merchant explorers", 350933, "The Guild of Merchant Explorers"),
+            ("lost ruins of arnak", 312484, "Lost Ruins of Arnak"),
+            ("just a #message no game", None, None)
         ],
         ids=[
             "monopoly", "TfM", "Guild of Merchant Explorers", "Arnak", "not-a-valid-game"
         ]
 
     )
-    def test_get_game_id(self, bgg_client, game_name, expected_game_id):
-        assert get_game_id(game_name, bgg_client) == expected_game_id
+    def test_get_game(self, bgg_client, game_name, expected_game_id, expected_game_name):
+        game_id, game_name = get_game_details(game_name, bgg_client)
+        assert game_id == expected_game_id
+        assert game_name == expected_game_name
 
     @pytest.mark.parametrize(
-        argnames="message, user_id, expected_type, expected_game_id",
+        argnames="message, user_id, expected_type, expected_game_id, expected_game_name",
         argvalues=[
-            ("#lOokingFor monopoly", 101, "search", 1406),
-            ("#seekingInterest Terraforming Mars", 102, "sale", 167791),
-            ("#sale Guild of Merchant Explorers", 103, "sale", 350933),
-            ("#selling Lost Ruins of Arnak", 104, "sale", 312484),
-            ("just a #message no game", 105, "post", None)
+            ("#lOokingFor monopoly", 101, "search", 1406, "Monopoly"),
+            ("#seekingInterest Terraforming Mars", 102, "sale", 167791, "Terraforming Mars"),
+            ("#sale Guild of Merchant Explorers", 103, "sale", 350933, "The Guild of Merchant Explorers"),
+            ("#selling Lost Ruins of Arnak", 104, "sale", 312484, "Lost Ruins of Arnak"),
+            ("just a #message no game", 105, "post", None, None)
         ],
         ids=[
             "search", "interest", "sale", "sale-selling", "no-type"
         ]
 
     )
-    def test_parse_message(self, mock_message, message, user_id, expected_type, expected_game_id):
+    def test_parse_message(self, mock_message, message, user_id, expected_type, expected_game_id, expected_game_name):
         mock_message.text = message
         mock_message.from_user.id = user_id
         mock_message.from_user.first_name = str(user_id * 100)
@@ -151,4 +153,5 @@ class TestMessageParsing:
         assert post.game_id == expected_game_id
         assert post.user_id == user_id
         assert post.user_name == str(user_id * 100)
-        assert post.to_db_tuple == (expected_type, expected_game_id, message.lower(), user_id, str(user_id * 100), 1)
+        assert post.game_name == expected_game_name
+        assert post.to_db_tuple == (expected_type, expected_game_id, message.lower(), user_id, str(user_id * 100), 1, expected_game_name)
