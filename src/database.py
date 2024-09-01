@@ -36,7 +36,7 @@ def read_user_posts(cursor: Cursor,
         filter_post_type = f"AND post_type = '{post_type}'"
 
     sql = f"""
-        SELECT distinct post_type, game_id, text, user_id, user_name
+        SELECT distinct post_type, game_id, text, user_id, user_name, game_name
         FROM post
         WHERE active = 1
         {filter_user_id}

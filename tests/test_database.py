@@ -54,7 +54,7 @@ class TestDatabase:
     def test_read_post_db_by_id(self, con, cursor, post, sample_data_tuples):
         init_post_db(cursor)
         cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
             sample_data_tuples
         )
         con.commit()
@@ -66,7 +66,7 @@ class TestDatabase:
     def test_read_post_db_by_type(self, con, cursor, post, sample_data_tuples):
         init_post_db(cursor)
         cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
             sample_data_tuples
         )
         con.commit()
@@ -85,8 +85,8 @@ class TestDatabase:
                 'sale',
                 167791,
                 [
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, "Ark Nova"),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1, "Monopoly"),
                 ]
             ),
             # disable monopoly search for Jacob
@@ -94,8 +94,8 @@ class TestDatabase:
                 'search',
                 123,
                 [
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1),
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1),
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, "Terraforming Mars"),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, "Ark Nova"),
                 ]
             )
         ],
@@ -104,7 +104,7 @@ class TestDatabase:
     def test_disable_posts_all(self, con, cursor, post, sample_data_tuples, post_type, game_id, expected_data):
         init_post_db(cursor)
         cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
             sample_data_tuples
         )
         con.commit()
@@ -120,25 +120,25 @@ class TestDatabase:
                 "sale",
                 None,
                 [
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob'),
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob'),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', "Ark Nova"),
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', "Terraforming Mars"),
                 ]
             ),
             (
                 "search",
                 None,
                 [
-                    ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry'),
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob'),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', "Monopoly"),
+                    ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', "Terraforming Mars"),
                 ]
             ),
             (
                 None,
                 101,
                 [
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob'),
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob'),
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob'),
+                    ('sale', 321, '#selling ark nova', '101', 'Jacob', "Ark Nova"),
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', "Terraforming Mars"),
+                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', "Monopoly"),
                 ]
             ),
         ],
@@ -152,7 +152,7 @@ class TestDatabase:
                              post_type, user_id, expected_data):
         init_post_db(cursor)
         cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
             sample_data_tuples
         )
         con.commit()
