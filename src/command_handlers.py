@@ -12,7 +12,6 @@ log = logging.getLogger("meeple-matchmaker")
 
 def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
     game_id = post[1]
-    text = post[2]
     user_id = post[3]
     user_name = post[4]
     game_name = post[5]
@@ -22,7 +21,6 @@ def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
         try:
             game = bgg_client.game(game_id=game_id)
         except BGGApiError:
-            log.error(f"text: {text}")
             log.error(f"game_id: {game_id}")
             log.error(f"BGGAPIError")
         if game:
