@@ -132,7 +132,7 @@ async def disable_command(update, context):
 
 async def list_all_active_sales(update, context):
     log.info("/list_all_sales")
-    if update.effective_chat.type == ChatType.GROUP:
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
         conn = sqlite3.connect("database/meeple-matchmaker.db")
@@ -148,7 +148,7 @@ async def list_all_active_sales(update, context):
 
 async def list_all_active_searches(update, context):
     log.info("/list_all_searches")
-    if update.effective_chat.type == ChatType.GROUP:
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
         conn = sqlite3.connect("database/meeple-matchmaker.db")
@@ -164,7 +164,7 @@ async def list_all_active_searches(update, context):
 
 async def list_my_active_posts(update, context):
     log.info("/list_all_searches")
-    if update.effective_chat.type == ChatType.GROUP:
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
         conn = sqlite3.connect("database/meeple-matchmaker.db")
