@@ -12,9 +12,9 @@ log = logging.getLogger("meeple-matchmaker")
 
 def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
     game_id = post[1]
-    user_id = post[3]
-    user_name = post[4]
-    game_name = post[5]
+    user_id = post[2]
+    user_name = post[3]
+    game_name = post[4]
     if not game_name:
         log.warning("Game name not found in database, searching BGG")
         game = None
