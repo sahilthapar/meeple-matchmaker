@@ -6,9 +6,25 @@ A telegram bot for meeple market which matches
     
 The bot uses two things from a posted message in the group
   
-- a message tag, supported tags are: #lookingfor, #sale, #selling, #seekinginterest, #sell, #found, #sold
+- a message tag, supported tags are:
+  - to search for a game: `#lookingfor, #iso, #looking`
+  - to sell a game: `#seekinginterest, #auction, #sale, #sell, #selling`
+  - to mark a game as sold: `#sold`
+  - to mark a game as found: `#found`
 - a game name, the more accurately your name matches the BGG name, the better your chances of success
-      
+
+This game name is then searched against BGG, and converted to a game id
+if a successful match is found.
+
+If the bot was able to find a successful match, it will react to the message with a 👍
+
+```
+Important note: Keep the first line of your message limited to only these two things
+a hashtag and a game name (as seen on BGG)
+
+All other details like condition, price, location should be present only in a new line
+```
+
 ## Example:
 
 Deepak posts a message
@@ -31,24 +47,10 @@ The bot will reply to Tanuj's message and tag Deepak and Chaitanya
 @Deepak @Chaitanya
 ```
 
-### How do I stop the notifications?
-You can use messages to do this for specific games
+Have questions?
+[Check out this FAQ](faq.md)
 
-This command will remove you from the user list who are actively searching for Ark Nova
-```
-#found Ark Nova
-``` 
-
-This command will remove you from the user list who are actively selling Ark Nova
-```
-#sold Ark Nova
-``` 
-
-In addition, if you'd like to stop notifications for all posts
-Go to the bot chat and type /disable
-This will stop all tags for you for all games you've already posted about.
-**Note:** This does not stop future notifications you might sign up for again
-
-
-**Please do not post any feedback / comments / suggestions / bugs / requests on the Meeple Market Channel
-Use the chit-chat channel or [Github](https://github.com/sahilthapar/meeple-matchmaker)**
+Have suggestions?
+Use the meeple-market chit chat group
+or [Github issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
+**Do not post in the main channel.**

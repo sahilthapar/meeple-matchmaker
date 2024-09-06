@@ -41,7 +41,7 @@ def read_user_posts(cursor: Cursor,
         WHERE active = 1
         {filter_user_id}
         {filter_post_type}
-        ORDER BY post_type,user_id,game_id
+        ORDER BY post_type,game_name,user_id
     """
 
     data = cursor.execute(sql).fetchall()

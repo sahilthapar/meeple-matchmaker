@@ -12,15 +12,15 @@ log = getLogger()
 
 TYPE_LOOKUP = {
     "#lookingfor": "search",
+    "#iso": "search",
+    "#looking": "search",
     "#sale": "sale",
     "#selling": "sale",
     "#seekinginterest": "sale",
     "#sell": "sale",
+    "#auction": "sale",
     "#sold": "sold",
     "#found": "found",
-    "#iso": "search",
-    "#looking": "search",
-    "#auction": "sale",
 }
 
 def parse_tag(message: str) -> str:
