@@ -168,7 +168,8 @@ async def list_my_active_posts(update, context):
             cur.arraysize = 100
             user_id = update.message.from_user.id
             data = read_user_posts(cur, user_id=user_id, post_type=None)
-            conn.commit()
             reply = format_list_of_posts(cur, data)
-            await update.message.reply_text(reply, parse_mode="Markdown")
+            for part in reply:
+                conn.commit()
+                await update.message.reply_text(part, parse_mode="Markdown")
         conn.close()
