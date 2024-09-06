@@ -65,47 +65,42 @@ async def start_command(update, context):
     
     The bot uses two things from a posted message in the group
       
-    - a message tag, supported tags are:
-      - to search for a game: `#lookingfor, #iso, #looking`
-      - to sell a game: `#seekinginterest, #auction, #sale, #sell, #selling`
-      - to mark a game as sold: `#sold`
-      - to mark a game as found: `#found`
-    - a game name, the more accurately your name matches the BGG name, the better your chances of success
+    1. *a hash tag*, supported tags are:
     
-    This game name is then searched against BGG, and converted to a game id
-    if a successful match is found.
+      - to search for a game: *#lookingfor, #iso, #looking*
+      
+      - to sell a game: *#seekinginterest, #auction, #sale, #sell, #selling*
+      
+    2. *a game name*, the more accurately your name matches the BGG name, the better your chances of success
+    
+    This game name is then searched against BGG, and converted to a game id, if a successful match is found.
     
     If the bot was able to find a successful match, it will react to the message with a 👍
     
-    *Important note: Keep the first line of your message limited to only these two things
-    a hashtag and a game name (as seen on BGG). 
+    *Important: Keep the first line of your message limited to only these two things a hashtag and a game name (as seen on BGG).
     All other details like condition, price, location should be present only in a new line*
-    ```
     
-    Example:
+    *Example:*
     
     Deepak posts a message
     ```
     #lookingfor Ark Nova
     ```
-    
     Chaitanya posts a message
     ```
     #lookingfor Ark Nova
     ```
-    
     Tanuj posts a message a few days later
     ```
     #seekinginterest Ark Nova
     ```
-    
     The bot will reply to Tanuj's message and tag Deepak and Chaitanya
     ```
     @Deepak @Chaitanya
     ```
     
     *Have questions?*
-    [Check out this FAQ](faq.md)
+    [Check out this FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
     
     *Have suggestions?*
     Use the meeple-market chit chat group
