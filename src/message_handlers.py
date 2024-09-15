@@ -18,7 +18,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     with conn:
 
         log.info("Attempting to parse message")
-        log.info(update.message.text)
         post = parse_message(update.message) if update.message else None
         if not post:
             return

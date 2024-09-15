@@ -23,7 +23,7 @@ if __name__ == "__main__":
         app.add_handler(CommandHandler("list_my_posts", list_my_active_posts))
 
         # message handlers
-        app.add_handler(MessageHandler(telegram.ext.filters.TEXT, message_handler))
+        app.add_handler(MessageHandler(filters=None, callback=message_handler))
 
         log.info("Bot is ready!")
         app.run_polling()

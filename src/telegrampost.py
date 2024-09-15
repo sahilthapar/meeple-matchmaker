@@ -23,6 +23,9 @@ TYPE_LOOKUP = {
     "#found": "found",
 }
 
+def get_message_contents(message: Message) -> str:
+    return message.text or message.caption
+
 def parse_tag(message: str) -> str:
     tag = re.search(
         pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#seekinginterest|^#sell|^#auction|^#sold|^#found",
@@ -38,7 +41,7 @@ def parse_game_name(message: str) -> str:
 
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Tuple:
     try:
-        log.info("Trying exact match")
+        log.info(f"Trying exact match for game: {game_name}")
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
             return game_exact.id, game_exact.name
@@ -53,7 +56,9 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Tuple:
     return None, None
 
 def parse_message(message: Message) -> Optional[SimpleNamespace]:
-    raw_text = message.text.lower() if message.text else ""
+    message_contents = get_message_contents(message)
+    log.info(message_contents)
+    raw_text = message_contents.lower() if message_contents else ""
     user_id = message.from_user.id if message.from_user else None
     user_name = message.from_user.first_name if message.from_user else None
 

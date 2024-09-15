@@ -1,6 +1,6 @@
 import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
-from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details
+from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details, get_message_contents
 
 
 class TestMessageParsing:
@@ -12,6 +12,27 @@ class TestMessageParsing:
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
         return mocker.patch("telegram.Message")
+
+    @pytest.mark.parametrize(
+        argnames="msg_type, msg_contents",
+        argvalues=[
+            ("text", "#lookingfor Ark Nova"),
+            ("image", "#lookingfor Ark Nova"),
+            ("video", "#lookingfor Ark Nova")
+        ],
+        ids=[
+            "text", "image", "video"
+        ]
+    )
+    def test_get_message_contents(self, mock_message, msg_type, msg_contents):
+        if msg_type == "text":
+            mock_message.text = msg_contents
+            mock_message.caption = None
+        if msg_type == "image" or msg_type == "video":
+            mock_message.text = None
+            mock_message.caption = msg_contents
+
+        assert get_message_contents(mock_message) == msg_contents
 
     @pytest.mark.parametrize(
         argnames="message, expected",
