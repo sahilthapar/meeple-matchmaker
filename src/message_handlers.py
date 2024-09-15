@@ -1,3 +1,4 @@
+"""telegram bot handlers for specific message types"""
 import logging
 import sqlite3
 from types import SimpleNamespace
@@ -12,7 +13,14 @@ from src.database import write_to_post_db, read_post_db, disable_posts
 
 log = logging.getLogger("meeple-matchmaker")
 
-async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Primary message handler which passes the message to specialized handler based on the post_type
+    after parsing the message
+    :param update:
+    :param _:
+    :return:
+    """
     conn = sqlite3.connect("database/meeple-matchmaker.db")
 
     with conn:
@@ -43,6 +51,12 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     conn.close()
 
 def search_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> Optional[str]:
+    """
+    Method to handle messages that are "searches" for games
+    :param conn:
+    :param post:
+    :return:
+    """
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
@@ -52,6 +66,12 @@ def search_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> O
     return None
 
 def sale_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> Optional[str]:
+    """
+    Method to handle messages that are "selling" games
+    :param conn:
+    :param post:
+    :return:
+    """
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
@@ -61,11 +81,23 @@ def sale_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> Opt
     return None
 
 def sold_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
+    """
+    Method to handle messages marking game as sold
+    :param conn:
+    :param post:
+    :return:
+    """
     cur = conn.cursor()
     disable_posts(cur, post.user_id, "sale", post.game_id)
     conn.commit()
 
 def found_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> None:
+    """
+    Method to handle messages marking game as found
+    :param conn:
+    :param post:
+    :return:
+    """
     cur = conn.cursor()
     disable_posts(cur, post.user_id, "search", post.game_id)
     conn.commit()

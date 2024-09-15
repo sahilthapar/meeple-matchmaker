@@ -1,17 +1,19 @@
-import telegram.ext.filters
+"""Entry point for telegram bot"""
+import json
+import logging
+
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
 from src.message_handlers import message_handler
 from src.command_handlers import (start_command, disable_command,
                                   list_all_active_sales, list_all_active_searches, list_my_active_posts)
-import json
-import logging
+
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("meeple-matchmaker")
 
 
 if __name__ == "__main__":
-    with open('auth.json') as f:
+    with open('auth.json', mode="r", encoding="utf-8") as f:
         token = json.load(f)["TOKEN"]
         app = ApplicationBuilder().token(token).build()
 

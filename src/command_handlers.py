@@ -1,16 +1,26 @@
+"""Handler for telegram bot commands"""
 import textwrap
 import sqlite3
 import logging
-from typing import Tuple, Optional
+from typing import Tuple
+from sqlite3 import Cursor
+
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
-from sqlite3 import Cursor
+
 
 from src.database import disable_posts, read_user_posts, update_game_name
 
 log = logging.getLogger("meeple-matchmaker")
 
 def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
+    """
+    Method to format a record for replying on telegram
+    :param cursor:
+    :param post:
+    :param bgg_client:
+    :return:
+    """
     game_id = post[1]
     user_id = post[2]
     user_name = post[3]
@@ -21,8 +31,8 @@ def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
         try:
             game = bgg_client.game(game_id=game_id)
         except BGGApiError:
-            log.error(f"game_id: {game_id}")
-            log.error(f"BGGAPIError")
+            log.error("game_id: %s", game_id)
+            log.error("BGGAPIError")
         if game:
             game_name = game.name
             update_game_name(cursor, game.id, game.name)
@@ -30,6 +40,12 @@ def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
 
 def format_list_of_posts(cursor: Cursor, posts: list[Tuple]) -> str:
+    """
+    Wrapper method to format a list of message posts for replying on telegram
+    :param cursor:
+    :param posts:
+    :return:
+    """
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
     active_sales = list(filter(lambda x: x[1] is not None and x[0] == 'sale', posts))
     active_searches = list(filter(lambda x: x[1] is not None and x[0] == 'search', posts))
@@ -53,8 +69,13 @@ def format_list_of_posts(cursor: Cursor, posts: list[Tuple]) -> str:
         reply = f"{formatted_sales}\n{formatted_searches}"
         yield textwrap.dedent(reply)
 
-async def start_command(update, context):
-    """Send a message when the command /start is issued."""
+async def start_command(update, _):
+    """
+    Command handler for the starting / help message
+    :param update:
+    :param _:
+    :return:
+    """
     reply = """
     
     Hi, this is the meeple matchmaker bot.
@@ -112,7 +133,13 @@ async def start_command(update, context):
     else:
         await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
 
-async def disable_command(update, context):
+async def disable_command(update, _):
+    """
+    Command handler to disable all active posts for a user
+    :param update:
+    :param _:
+    :return:
+    """
     log.info("/disable")
     if update.effective_chat.type == ChatType.GROUP:
         await update.message.set_reaction("👎")
@@ -125,7 +152,13 @@ async def disable_command(update, context):
             conn.commit()
         conn.close()
 
-async def list_all_active_sales(update, context):
+async def list_all_active_sales(update, _):
+    """
+    Command handler to list all active sales currently being tracked by the bot
+    :param update:
+    :param _:
+    :return:
+    """
     log.info("/list_all_sales")
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
@@ -141,7 +174,13 @@ async def list_all_active_sales(update, context):
                 await update.message.reply_text(part, parse_mode="Markdown")
         conn.close()
 
-async def list_all_active_searches(update, context):
+async def list_all_active_searches(update, _):
+    """
+    Command handler to list all active searches currently being tracked by the bot
+    :param update:
+    :param _:
+    :return:
+    """
     log.info("/list_all_searches")
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
@@ -157,7 +196,13 @@ async def list_all_active_searches(update, context):
                 await update.message.reply_text(part, parse_mode="Markdown")
         conn.close()
 
-async def list_my_active_posts(update, context):
+async def list_my_active_posts(update, _):
+    """
+    Command handler to list all active posts for the user
+    :param update:
+    :param _:
+    :return:
+    """
     log.info("/list_all_searches")
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
