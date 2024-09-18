@@ -120,25 +120,25 @@ class TestDatabase:
                 "sale",
                 None,
                 [
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', "Ark Nova"),
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', "Terraforming Mars"),
+                    ('sale', 321, '101', 'Jacob', "Ark Nova"),
+                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
                 ]
             ),
             (
                 "search",
                 None,
                 [
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', "Monopoly"),
-                    ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', "Terraforming Mars"),
+                    ('search', 123, '101', 'Jacob', "Monopoly"),
+                    ('search', 167791, '102', 'Henry', "Terraforming Mars"),
                 ]
             ),
             (
                 None,
                 101,
                 [
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', "Ark Nova"),
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', "Terraforming Mars"),
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', "Monopoly"),
+                    ('sale', 321, '101', 'Jacob', "Ark Nova"),
+                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
+                    ('search', 123, '101', 'Jacob', "Monopoly"),
                 ]
             ),
         ],
