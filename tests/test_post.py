@@ -114,14 +114,28 @@ class TestMessageParsing:
                 """,
                 "monopoly"
             ),
-
+            (
+                """
+                game: kanban ev
+                """,
+                "kanban ev"
+            ),
+            (
+                """
+                game name: kanban ev
+                """,
+                "kanban ev"
+            )
         ],
         ids=[
             "single-line",
             "single-line-no-game",
             "multiline-with-just-game",
             "mutliline-with-condition",
-            "multiline-with-more-details-and-links"
+            "multiline-with-more-details-and-links",
+            "multiline-with-keyword-game",
+            "mutliline-with-keyword-game-name"
+            ""
         ]
 
     )

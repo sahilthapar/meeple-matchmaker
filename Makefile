@@ -2,9 +2,7 @@ install:
 	pip install -r requirements.txt
 
 lint:
-	ruff check
-	mypy src
-	mypy tests
+	pylint tests src
 
 test:
 	pytest

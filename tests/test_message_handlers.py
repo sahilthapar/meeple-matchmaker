@@ -17,8 +17,7 @@ class TestMessageHandlers:
         return conn
 
     @pytest.fixture(name="setup_teardown")
-    def setup_teardown(self):
-        conn = sqlite3.connect("test-database")
+    def setup_teardown(self, conn):
         cur = conn.cursor()
         init_post_db(cur)
         yield
@@ -46,8 +45,8 @@ class TestMessageHandlers:
             # simple scenario with a two sale posts followed by a search post
             (
                 [
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'alpha', 1),
-                    ('sale', 167791, '#sell terraforming mars', '102', 'beta', 1),
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'alpha', 1, 'Terraforming Mars'),
+                    ('sale', 167791, '#sell terraforming mars', '102', 'beta', 1, 'Terraforming Mars'),
                 ],
                 [
                     SimpleNamespace(text="#lookingfor terraforming mars", id=9999, first_name="Jacob")
@@ -59,8 +58,8 @@ class TestMessageHandlers:
             # simple scenario with a two search posts followed by a sale post
             (
                 [
-                    ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1),
-                    ('search', 167791, '#lookingfor terraforming mars', '102', 'beta', 1),
+                    ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars'),
+                    ('search', 167791, '#lookingfor terraforming mars', '102', 'beta', 1, 'Terraforming Mars'),
                 ],
                 [
                     SimpleNamespace(text="#sell terraforming mars", id=9999, first_name="Jacob")
@@ -85,14 +84,14 @@ class TestMessageHandlers:
         # insert initial data rows into the db
         cur = conn.cursor()
         cur.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) '
+            'VALUES (?,?,?,?,?,?,?)',
             init_inserts
         )
         conn.commit()
 
         # call message handler with a new message or multiple new messages
         for msg, reply in zip(new_messages, expected_replies):
-            print(msg)
             mock_update.message.text = msg.text
             mock_update.message.from_user.id = msg.id
             mock_update.message.from_user.first_name = msg.first_name

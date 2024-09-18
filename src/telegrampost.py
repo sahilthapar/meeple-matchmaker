@@ -37,7 +37,7 @@ def parse_tag(message: str) -> str:
 
 def parse_game_name(message: str) -> str:
     first_line = message.strip().split("\n")[0]
-    return first_line
+    return first_line.replace("game name:", "").replace("game:", "").strip()
 
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Tuple:
     try:
