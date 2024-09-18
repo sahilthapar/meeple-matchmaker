@@ -7,7 +7,6 @@ from typing import Optional
 from telegram.ext import ContextTypes
 from telegram import Update
 
-
 from src.telegrampost import parse_message
 from src.database import write_to_post_db, read_post_db, disable_posts
 
@@ -21,21 +20,19 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     :param _:
     :return:
     """
-    conn = sqlite3.connect("database/meeple-matchmaker.db")
 
-    with conn:
-
+    with sqlite3.connect("database/meeple-matchmaker.db") as conn:
         log.info("Attempting to parse message")
         post = parse_message(update.message) if update.message else None
         if not post:
             return
-        if post.post_type == "search" and update.message:
-            reply = search_message_handler(conn, post)
-            if reply:
-                await update.message.reply_text(reply, parse_mode='Markdown')
-
-        elif post.post_type == "sale" and update.message:
-            reply = sale_message_handler(conn, post)
+        if update.message:
+            # get reply based on the post type
+            if post.post_type == "search" and update.message:
+                reply = search_message_handler(conn, post)
+            elif post.post_type == "sale":
+                reply = sale_message_handler(conn, post)
+            # send reply
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
 
@@ -48,7 +45,6 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if post.game_id:
             await update.message.set_reaction("👍")
 
-    conn.close()
 
 def search_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> Optional[str]:
     """
