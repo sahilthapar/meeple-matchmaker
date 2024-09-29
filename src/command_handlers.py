@@ -203,7 +203,7 @@ async def list_my_active_posts(update, _):
     :param _:
     :return:
     """
-    log.info("/list_all_searches")
+    log.info("/list_my_posts")
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
