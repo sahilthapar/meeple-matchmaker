@@ -24,6 +24,7 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     with sqlite3.connect("database/meeple-matchmaker.db") as conn:
         log.info("Attempting to parse message")
         post = parse_message(update.message) if update.message else None
+        reply = ''
         if not post:
             return
         if update.message:

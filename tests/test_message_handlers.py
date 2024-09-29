@@ -68,13 +68,33 @@ class TestMessageHandlers:
                     "[alpha](tg://user?id=101), [beta](tg://user?id=102)"
                 ]
             ),
-            # todo: simple scenario with sold
-            # todo: simple scenario with found
+            # simple scenario with a sale post followed by a sold post
+            (
+                    [
+                        ('sale', 167791, '#seekinginterest terraforming mars', '101', 'alpha', 1, 'Terraforming Mars'),
+                    ],
+                    [
+                        SimpleNamespace(text="#sold terraforming mars", id=101, first_name="Alpha")
+                    ],
+                    ['']
+            ),
+            # simple scenario with a search post followed by a found post
+            (
+                    [
+                        ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars')
+                    ],
+                    [
+                        SimpleNamespace(text="#found terraforming mars", id=101, first_name="Alpha")
+                    ],
+                    ['']
+            ),
             # todo: scenario with disable notifications in between
         ],
         ids=[
             "scenario1-simple-sales-followed-by-a-search",
             "scenario2-simple-searches-followed-by-a-sale",
+            "scenario3-simple-sale-followed-by-a-sold",
+            "scenario4-simple-search-followed-by-a-found",
 
         ]
     )
@@ -97,6 +117,7 @@ class TestMessageHandlers:
             mock_update.message.from_user.first_name = msg.first_name
 
             await message_handler(mock_update, mock_context)
-
-            mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
+            # todo: for sold and found scenarios perhaps also assert that the right db methods are being called?
+            if reply:
+                mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
             mock_update.message.set_reaction.assert_called_once_with("👍")
