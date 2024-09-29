@@ -2,10 +2,12 @@
 import json
 import logging
 
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, MessageReactionHandler
 from src.message_handlers import message_handler
 from src.command_handlers import (start_command, disable_command,
                                   list_all_active_sales, list_all_active_searches, list_my_active_posts)
+from src.reaction_handlers import reaction_handler
 
 
 logging.basicConfig(level=logging.INFO)
@@ -27,5 +29,8 @@ if __name__ == "__main__":
         # message handlers
         app.add_handler(MessageHandler(filters=None, callback=message_handler))
 
+        # message reaction handlers
+        app.add_handler(MessageReactionHandler(callback=reaction_handler, message_reaction_types="MESSAGE_REACTION"))
+
         log.info("Bot is ready!")
-        app.run_polling()
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
