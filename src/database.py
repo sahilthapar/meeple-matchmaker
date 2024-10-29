@@ -64,7 +64,7 @@ def disable_posts(cursor: Cursor, user_id: int, post_type: Optional[str], game_i
     cursor.execute(sql)
 
 def update_game_name(cursor, game_id: int, game_name: str) -> None:
-    sql = f"""
+    sql = """
     UPDATE post SET game_name = :game_name
     WHERE game_id = :game_id
     """

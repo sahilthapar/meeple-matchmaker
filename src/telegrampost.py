@@ -2,7 +2,6 @@ from telegram import Message
 from typing import Optional, Tuple
 from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
-from boardgamegeek.objects.games import BoardGame  # type: ignore
 from types import SimpleNamespace
 import re
 
