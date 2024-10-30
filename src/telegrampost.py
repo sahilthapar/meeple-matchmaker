@@ -45,18 +45,20 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
-            return Game.get_or_create(
+            game, _ = Game.get_or_create(
                 game_name=game_exact.name,
                 game_id=game_exact.id
             )
+            return game
     except BGGItemNotFoundError:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
             game_fuzzy = bgg_client.game(game_name, exact=False)
-            return Game.get_or_create(
+            game, _ = Game.get_or_create(
                 game_name=game_fuzzy.name,
                 game_id=game_fuzzy.id
             )
+            return game
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return
@@ -101,7 +103,7 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
     # parse game info
     game_name = parse_game_name(message_without_tag)
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7))
-    game, _ = get_game_details(game_name, bgg_client)
+    game = get_game_details(game_name, bgg_client)
     if not game:
         log.warning("Game not found")
         return None, None, None

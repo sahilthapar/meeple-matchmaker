@@ -2,7 +2,8 @@ import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
 from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details, get_message_contents
 
-from src.models import Post, Game, User
+from src.models import Post, Game, User, db
+from src.database import init_tables
 
 class TestMessageParsing:
 
@@ -13,6 +14,11 @@ class TestMessageParsing:
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
         return mocker.patch("telegram.Message")
+
+    @pytest.fixture(name="initialize_db")
+    def initialize_db(self):
+        db.init(":memory:")
+        init_tables(db)
 
     @pytest.mark.parametrize(
         argnames="msg_type, msg_contents",
@@ -157,7 +163,7 @@ class TestMessageParsing:
         ]
 
     )
-    def test_get_game(self, bgg_client, game_name, expected_game_id, expected_game_name):
+    def test_get_game(self, bgg_client, initialize_db, game_name, expected_game_id, expected_game_name):
         game = get_game_details(game_name, bgg_client)
         if not expected_game_id:
             assert game is None
@@ -179,7 +185,7 @@ class TestMessageParsing:
         ]
 
     )
-    def test_parse_message(self, mock_message, message, user_id, expected_type, expected_game_id, expected_game_name):
+    def test_parse_message(self, mock_message, initialize_db, message, user_id, expected_type, expected_game_id, expected_game_name):
         mock_message.text = message
         mock_message.from_user.id = user_id
         mock_message.from_user.first_name = str(user_id * 100)
@@ -194,10 +200,10 @@ class TestMessageParsing:
         # check post
         assert isinstance(post, Post)
         assert post.post_type == expected_type
-        assert post.game_id == expected_game_id
-        assert post.user_id == user_id
-        assert post.user_name == str(user_id * 100)
-        assert post.game_name == expected_game_name
+        assert post.game.game_id == expected_game_id
+        assert post.user.telegram_userid == user_id
+        assert post.user.first_name == str(user_id * 100)
+        assert post.game.game_name == expected_game_name
         assert post.active == 1
 
         # check game
