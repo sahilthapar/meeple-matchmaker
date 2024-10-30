@@ -23,20 +23,12 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
 
     with sqlite3.connect("database/meeple-matchmaker.db") as conn:
         log.info("Attempting to parse message")
-        post = parse_message(update.message) if update.message else None
-        reply = ''
+        post, game, user = parse_message(update.message) if update.message else None
         if not post:
             return
         if update.message:
-            # get reply based on the post type
-            if post.post_type == "search" and update.message:
-                reply = search_message_handler(conn, post)
-            elif post.post_type == "sale":
-                reply = sale_message_handler(conn, post)
-            elif post.post_type == "sold" and update.message:
-                sold_message_handler(conn, post)
-            elif post.post_type == "found" and update.message:
-                found_message_handler(conn, post)
+            handler = MESSAGE_HANDLERS.get(post.post_type)
+            reply = handler(conn, post)
             # send reply
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
@@ -96,3 +88,11 @@ def found_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> No
     cur = conn.cursor()
     disable_posts(cur, post.user_id, "search", post.game_id)
     conn.commit()
+
+
+MESSAGE_HANDLERS = {
+    "search": search_message_handler,
+    "sale": sale_message_handler,
+    "sold": sold_message_handler,
+    "found": found_message_handler
+}
