@@ -84,6 +84,7 @@ class TestDatabase:
 
         disable_posts(user_id=jacob.telegram_userid, post_type=post_type, game_id=game_id)
 
+        #ruff: noqa: E712
         jacobs_inactive_posts = Post.select().where((Post.active == False) & (Post.user == jacob)).execute()
         actual_inactives = [
             self._post_model_to_tuple(post) for post in jacobs_inactive_posts

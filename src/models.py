@@ -1,12 +1,7 @@
-from peewee import *
+from peewee import SqliteDatabase, Model
+from peewee import AutoField, IntegerField, TextField, BooleanField, ForeignKeyField
 
 db = SqliteDatabase(None)
-import logging
-from playhouse.shortcuts import model_to_dict
-
-logger = logging.getLogger('peewee')
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 class User(Model):
     id = AutoField()

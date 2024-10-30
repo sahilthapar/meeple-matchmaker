@@ -9,7 +9,7 @@ from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
 
 
-from src.database import disable_posts, update_game_name
+from src.database import disable_posts, update_game_name, read_posts
 
 log = logging.getLogger("meeple-matchmaker")
 
@@ -167,7 +167,7 @@ async def list_all_active_sales(update, _):
         with conn:
             cur = conn.cursor()
             cur.arraysize = 100
-            data = read_user_posts(cur, user_id=None, post_type="sale")
+            data = read_posts(cur, user_id=None, post_type="sale")
             reply = format_list_of_posts(cur, data)
             for part in reply:
                 conn.commit()
@@ -189,7 +189,7 @@ async def list_all_active_searches(update, _):
         with conn:
             cur = conn.cursor()
             cur.arraysize = 100
-            data = read_user_posts(cur, user_id=None, post_type="search")
+            data = read_posts(cur, user_id=None, post_type="search")
             reply = format_list_of_posts(cur, data)
             for part in reply:
                 conn.commit()
@@ -212,7 +212,7 @@ async def list_my_active_posts(update, _):
             cur = conn.cursor()
             cur.arraysize = 100
             user_id = update.message.from_user.id
-            data = read_user_posts(cur, user_id=user_id, post_type=None)
+            data = read_posts(cur, user_id=user_id, post_type=None)
             reply = format_list_of_posts(cur, data)
             for part in reply:
                 conn.commit()

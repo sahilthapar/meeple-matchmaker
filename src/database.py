@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Iterable
 
 from peewee import SqliteDatabase
 from src.models import Post, User, Game
