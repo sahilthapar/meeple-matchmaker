@@ -3,7 +3,7 @@ import pytest
 import sqlite3
 from types import SimpleNamespace
 
-from src.database import init_post_db
+from src.database import init_tables
 from src.message_handlers import message_handler
 
 pytest_plugins = ('pytest_asyncio',)
@@ -19,7 +19,7 @@ class TestMessageHandlers:
     @pytest.fixture(name="setup_teardown")
     def setup_teardown(self, conn):
         cur = conn.cursor()
-        init_post_db(cur)
+        init_tables(cur)
         yield
         cur.execute("DELETE FROM post")
         conn.commit()

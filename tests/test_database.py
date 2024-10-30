@@ -1,5 +1,5 @@
 import pytest
-from src.database import init_tables, read_post_db, disable_posts, read_user_posts
+from src.database import init_tables, read_posts, disable_posts
 from src.models import User, Game, Post, db
 
 
@@ -45,34 +45,6 @@ class TestDatabase:
         data = database.get_tables()
 
         assert data == ['game', 'user', 'user_post']
-
-    # def test_write_to_post_db(self, ):
-    #     # create a new post
-    #     # write it to db
-    #     # check if it's written
-    #     init_tables(cursor)
-    #
-    #     write_to_post_db(cursor, [post])
-    #     con.commit()
-    #
-    #     data = cursor.execute("SELECT * FROM post")
-    #     assert list(data) == [sample_data_tuple]
-
-    @pytest.mark.parametrize(
-        argnames='game_id,post_type,expected_data',
-        argvalues=[
-            (167791, 'search', [(102, 'Henry')]),
-            (167791, 'sale', [(101, 'Jacob')]),
-
-        ],
-        ids=["search_tfm", "sale_tfm",]
-    )
-    def test_read_post_db(self, sample_posts, game_id, post_type, expected_data):
-        data = read_post_db(game_id=game_id, post_type=post_type)
-
-        user_data = [(d.user.telegram_userid, d.user.first_name) for d in data]
-
-        assert user_data == expected_data
 
     @pytest.mark.parametrize(
         argnames="post_type,game_id,expected_inactives",
@@ -120,9 +92,26 @@ class TestDatabase:
         assert actual_inactives == expected_inactives
 
     @pytest.mark.parametrize(
-        argnames="post_type, user_id, expected_data",
+        argnames="user_id, post_type, game_id, expected_data",
         argvalues=[
             (
+                    None,
+                    "search",
+                    167791,
+                    [
+                        ('search', 167791, 'Henry', True, 'Terraforming Mars'),
+                    ]
+            ),
+            (
+                    None,
+                    "sale",
+                    167791,
+                    [
+                        ('sale', 167791, 'Jacob', True, 'Terraforming Mars'),
+                    ]
+            ),
+            (
+                    None,
                     "sale",
                     None,
                     [
@@ -131,6 +120,7 @@ class TestDatabase:
                     ]
             ),
             (
+                    None,
                     "search",
                     None,
                     [
@@ -139,8 +129,9 @@ class TestDatabase:
                     ]
             ),
             (
-                    None,
                     101,
+                    None,
+                    None,
                     [
                         ('sale', 321, 'Jacob', True, "Ark Nova"),
                         ('sale', 167791, 'Jacob', True, "Terraforming Mars"),
@@ -149,13 +140,15 @@ class TestDatabase:
             ),
         ],
         ids=[
+            "search_tfm",
+            "sale_tfm",
             "list_all_active_sales",
             "list_all_active_searches",
             "list_all_active_posts_for_user"
         ]
     )
-    def test_read_user_posts(self, sample_posts, post_type, user_id, expected_data):
+    def test_read_posts(self, sample_posts, user_id, post_type, game_id, expected_data):
 
-        posts = read_user_posts(post_type=post_type, user_id=user_id)
+        posts = read_posts(post_type=post_type, user_id=user_id, game_id=game_id)
         posts = [self._post_model_to_tuple(post) for post in posts]
         assert posts == expected_data

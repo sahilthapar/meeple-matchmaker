@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 from telegram import Update
 
 from src.telegrampost import parse_message
-from src.database import write_to_post_db, read_post_db, disable_posts
+from src.database import write_to_post_db, read_posts, disable_posts
 
 log = logging.getLogger("meeple-matchmaker")
 
@@ -47,7 +47,7 @@ def search_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> O
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
-    search_posts = read_post_db(cursor=cur, game_id=post.game_id, post_type="sale")
+    search_posts = read_posts(cursor=cur, game_id=post.game_id, post_type="sale")
     if search_posts:
         return ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
     return None
@@ -62,7 +62,7 @@ def sale_message_handler(conn: sqlite3.Connection, post: SimpleNamespace) -> Opt
     cur = conn.cursor()
     write_to_post_db(cur, [post])
     conn.commit()
-    search_posts = read_post_db(cursor=cur, game_id=post.game_id, post_type="search")
+    search_posts = read_posts(cursor=cur, game_id=post.game_id, post_type="search")
     if search_posts:
         return ', '.join([f'[{row[1]}](tg://user?id={row[0]})' for row in search_posts])
     return None

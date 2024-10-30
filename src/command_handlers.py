@@ -9,7 +9,7 @@ from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
 
 
-from src.database import disable_posts, read_user_posts, update_game_name
+from src.database import disable_posts, update_game_name
 
 log = logging.getLogger("meeple-matchmaker")
 
