@@ -31,13 +31,11 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     post, game, user = parse_message(update.message) if update.message else None
     if not post or not game or not user:
         return
-    print('messge is: ', update.message.text)
-    print('parsed_message: ', post.text, game.game_name, user.first_name)
     if update.message:
         if post.post_type == 'search' or post.post_type == 'sale':
-            print("sale or search post")
             reply = find_matching_posts(post)
-            await update.message.reply_text(reply, parse_mode='Markdown')
+            if reply:
+                await update.message.reply_text(reply, parse_mode='Markdown')
         elif post.post_type == 'sold' or post.post_type == 'found':
             disable_post(post)
 
@@ -57,8 +55,11 @@ def find_matching_posts(post: Post) -> Optional[str]:
     post_type = COMPLEMENTARY_POST_TYPE.get(post.post_type)
     posts = read_posts(game_id=post.game.game_id, post_type=post_type)
     if posts:
+        users = set()
+        for post in posts:
+            users.add((post.user.first_name, post.user.telegram_userid))
         return ', '.join([
-            _format_user_tag(post.user.first_name, post.user.telegram_userid) for post in posts
+            _format_user_tag(*user) for user in users
         ])
     return None
 
