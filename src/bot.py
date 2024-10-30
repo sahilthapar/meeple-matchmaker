@@ -16,7 +16,7 @@ if __name__ == "__main__":
     with open('auth.json', mode="r", encoding="utf-8") as f:
         token = json.load(f)["TOKEN"]
         app = ApplicationBuilder().token(token).build()
-
+        # todo: intitialize db here
         # command handlers
         app.add_handler(CommandHandler("start", start_command))
         app.add_handler(CommandHandler("disable", disable_command))

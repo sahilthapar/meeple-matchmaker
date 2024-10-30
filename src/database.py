@@ -10,9 +10,9 @@ def init_tables(db: SqliteDatabase) -> None:
     db.create_tables([Post, User, Game])
 
 def read_posts(
-        user_id: Optional[int],
-        post_type: Optional[str],
-        game_id: Optional[int],
+        user_id: Optional[int] = None,
+        post_type: Optional[str] = None,
+        game_id: Optional[int] = None,
         is_active: Optional[bool] = True
 ) -> Iterable[Post]:
 

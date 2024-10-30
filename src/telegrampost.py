@@ -45,7 +45,7 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
-            return Game(
+            return Game.get_or_create(
                 game_name=game_exact.name,
                 game_id=game_exact.id
             )
@@ -53,7 +53,7 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
             game_fuzzy = bgg_client.game(game_name, exact=False)
-            return Game(
+            return Game.get_or_create(
                 game_name=game_fuzzy.name,
                 game_id=game_fuzzy.id
             )
@@ -68,11 +68,13 @@ def create_user_from_message(message: Message) -> User:
     :param message:
     :return:
     """
-    return User(
-        telegram_userid=message.from_user.id,
-        first_name=message.from_user.first_name,
-        last_name=message.from_user.last_name
+    user, _ = User.get_or_create(
+        telegram_userid=message.from_user.id
     )
+    user.first_name = message.from_user.first_name
+    user.last_name = message.from_user.last_name
+
+    return user
 
 
 def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
@@ -94,12 +96,12 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     # if no post type found, exit
     if not message_type:
-        return None,None,None
+        return None, None, None
 
     # parse game info
     game_name = parse_game_name(message_without_tag)
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7))
-    game = get_game_details(game_name, bgg_client)
+    game, _ = get_game_details(game_name, bgg_client)
     if not game:
         log.warning("Game not found")
         return None, None, None
@@ -107,12 +109,13 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
     post = Post(
         post_type=message_type,
         text=message_text,
-        game_id=game.game_id,
-        user_id=user.telegram_userid,
-        user_name=user.first_name,
-        game_name=game.game_name,
-        active=1
+        active=1,
+        user=user,
+        game=game
     )
+    game.save()
+    user.save()
+    post.save()
 
     return post, game, user
 

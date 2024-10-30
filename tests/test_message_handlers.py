@@ -1,29 +1,19 @@
 import asyncio
 import pytest
-import sqlite3
 from types import SimpleNamespace
 
 from src.database import init_tables
 from src.message_handlers import message_handler
 
+from src.models import Post, Game, User, db
 pytest_plugins = ('pytest_asyncio',)
 
 class TestMessageHandlers:
 
-    @pytest.fixture(name="conn")
-    def conn(self, mocker):
-        conn = sqlite3.connect("test-database")
-        mocker.patch("sqlite3.connect", return_value=conn)
-        return conn
-
-    @pytest.fixture(name="setup_teardown")
-    def setup_teardown(self, conn):
-        cur = conn.cursor()
-        init_tables(cur)
-        yield
-        cur.execute("DELETE FROM post")
-        conn.commit()
-        conn.close()
+    @pytest.fixture(name="database")
+    def database(self):
+        db.init(":memory:")
+        return db
 
     @pytest.fixture(name="mock_update")
     def mock_update(self, mocker):
@@ -39,8 +29,22 @@ class TestMessageHandlers:
     def mock_context(self, mocker):
         mocker.patch("telegram.ext.ContextTypes.DEFAULT_TYPE")
 
+    @staticmethod
+    def initialize_post(
+            post_type: str, text: str, active: bool,
+            user_id: int, user_name: str,
+            game_id: int, game_name: str
+    ):
+        user, _ = User.get_or_create(telegram_userid=user_id, first_name=user_name)
+        game, _ = Game.get_or_create(game_id=game_id, game_name=game_name)
+
+        user.save()
+        game.save()
+        post = Post(post_type=post_type, text=text, active=active, user=user, game=game)
+        post.save()
+
     @pytest.mark.parametrize(
-        argnames="init_inserts,new_messages,expected_replies",
+        argnames="init_posts,new_messages,expected_replies",
         argvalues=[
             # simple scenario with a two sale posts followed by a search post
             (
@@ -99,16 +103,14 @@ class TestMessageHandlers:
         ]
     )
     @pytest.mark.asyncio
-    async def test_scenario(self, setup_teardown, conn, mock_update, mock_context,
-                            init_inserts, new_messages, expected_replies):
-        # insert initial data rows into the db
-        cur = conn.cursor()
-        cur.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) '
-            'VALUES (?,?,?,?,?,?,?)',
-            init_inserts
-        )
-        conn.commit()
+    async def test_scenario(self, database, init_posts, mock_update, mock_context, new_messages, expected_replies):
+        init_tables(database)
+        for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
+            self.initialize_post(
+                post_type=post_type, text=text, active=active,
+                user_id=user_id, user_name=user_name,
+                game_id=game_id, game_name=game_name
+            )
 
         # call message handler with a new message or multiple new messages
         for msg, reply in zip(new_messages, expected_replies):
