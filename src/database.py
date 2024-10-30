@@ -1,67 +1,43 @@
-from types import SimpleNamespace
-from typing import Optional, Tuple
-from sqlite3 import Cursor
+from typing import Optional, Tuple, Iterable
+
+from peewee import SqliteDatabase
+from src.models import Post, User, Game
+from functools import reduce
+import operator
 
 
-def write_to_post_db(cursor: Cursor, posts: list[SimpleNamespace]):
-    sql_tuples = [(
-        post.post_type, post.game_id, post.text, post.user_id, post.user_name, 1, post.game_name
-    ) for post in posts]
-    cursor.executemany(
-        'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
-        sql_tuples
-    )
+def read_user_posts(user_id: int, post_type: str) -> Iterable[Post]:
 
+    clauses = [(Post.active == True)]
 
-def read_post_db(cursor: Cursor,
-                 game_id: int,
-                 post_type: str) -> list[Tuple]:
-    filter_clause = f"""
-        WHERE game_id = {str(game_id)}
-        AND post_type = "{post_type}"
-        AND active = 1
-    """
-    data = cursor.execute(f"SELECT DISTINCT user_id, user_name FROM post {filter_clause}").fetchall()
-    return data
-
-
-def read_user_posts(cursor: Cursor,
-                    user_id: int,
-                    post_type: str) -> list[Tuple]:
-    filter_user_id = ""
-    filter_post_type = ""
     if user_id:
-        filter_user_id = f"AND user_id = {str(user_id)}"
+        user = User.get(telegram_userid=user_id)
+        clauses.append((Post.user == user))
     if post_type:
-        filter_post_type = f"AND post_type = '{post_type}'"
+        clauses.append((Post.post_type == post_type))
 
-    sql = f"""
-        SELECT distinct post_type, game_id, user_id, user_name, game_name
-        FROM post
-        WHERE active = 1
-        {filter_user_id}
-        {filter_post_type}
-        ORDER BY post_type,game_name,user_id
-    """
-
-    data = cursor.execute(sql).fetchall()
+    data = Post.select()\
+        .where(reduce(operator.and_, clauses))\
+        .order_by(Post.post_type, -Post.game, Post.user)\
+        .execute()
     return data
 
 
-def disable_posts(cursor: Cursor, user_id: int, post_type: Optional[str], game_id: Optional[int]) -> None:
-    filter_game_id = ""
-    filter_post_type = ""
+def disable_posts(user_id: int, post_type: Optional[str], game_id: Optional[int]) -> None:
+    user = User.get(telegram_userid=user_id)
+
+    clauses = [
+        (Post.user == user)
+    ]
+
     if game_id:
-        filter_game_id = f"AND game_id = {str(game_id)}"
+        game = Game.get(game_id=game_id)
+        clauses.append((Post.game == game))
+
     if post_type:
-        filter_post_type = f"AND post_type = '{post_type}'"
-    sql = f"""
-    Update post SET active = 0
-    WHERE user_id = '{str(user_id)}'
-    {filter_game_id}
-    {filter_post_type}
-    """
-    cursor.execute(sql)
+        clauses.append((Post.post_type == post_type))
+
+    Post.update(active=False).where(reduce(operator.and_, clauses)).execute()
 
 def update_game_name(cursor, game_id: int, game_name: str) -> None:
     sql = """
@@ -71,25 +47,28 @@ def update_game_name(cursor, game_id: int, game_name: str) -> None:
     cursor.execute(sql, {"game_name": f'{game_name}', "game_id": game_id})
 
 
-def init_post_db(cursor):
-    sql = """
-        CREATE TABLE IF NOT EXISTS post(
-            post_type VARCHAR,
-            game_id INTERGER,
-            text VARCHAR,
-            user_id VARCHAR,
-            user_name VARCHAR,
-            active BOOLEAN,
-            game_name VARCHAR
-        )
-    """
-    cursor.execute(sql)
+def init_tables(db: SqliteDatabase) -> None:
+    db.create_tables([Post, User, Game])
 
-#
-# if __name__ == '__main__':
-#     con = sqlite3.connect("meeple-matchmaker")
-#     cur = con.cursor()
-#     # init_post_db(cur)
-#     rows = cur.execute("SELECT * FROM post")
-#     for row in rows:
-#         print(row)
+def read_post_db(game_id: int,
+                 post_type: str) -> list[Tuple]:
+
+    game = Game.get(game_id=game_id)
+    data = Post\
+        .select()\
+        .where(
+            (Post.post_type == post_type) &
+            (Post.game == game) &
+            (Post.active == True)
+        )\
+        .execute()
+    return data
+
+# def write_to_post_db(db: SqliteDatabase, posts: list[Post]):
+#     sql_tuples = [(
+#         post.post_type, post.game_id, post.text, post.user_id, post.user_name, 1, post.game_name
+#     ) for post in posts]
+#     cursor.executemany(
+#         'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
+#         sql_tuples
+#     )
