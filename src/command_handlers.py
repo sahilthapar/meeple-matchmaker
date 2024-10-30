@@ -1,54 +1,47 @@
 """Handler for telegram bot commands"""
 import textwrap
-import sqlite3
 import logging
-from typing import Tuple
-from sqlite3 import Cursor
+from typing import Iterable
+from src.models import Post
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
 
 
-from src.database import disable_posts, update_game_name, read_posts
+from src.database import disable_posts, read_posts
 
 log = logging.getLogger("meeple-matchmaker")
 
-def format_post(cursor: Cursor, post: tuple, bgg_client: BGGClient) -> str:
+def format_post(post: Post, bgg_client: BGGClient) -> str:
     """
     Method to format a record for replying on telegram
-    :param cursor:
     :param post:
     :param bgg_client:
     :return:
     """
-    game_id = post[1]
-    user_id = post[2]
-    user_name = post[3]
-    game_name = post[4]
+    game_id = post.game.game_id
+    user_id = post.user.telegram_userid
+    user_name = post.user.first_name
+    game_name = post.game.game_name
     if not game_name:
         log.warning("Game name not found in database, searching BGG")
-        game = None
         try:
             game = bgg_client.game(game_id=game_id)
         except BGGApiError:
             log.error("game_id: %s", game_id)
             log.error("BGGAPIError")
-        if game:
-            game_name = game.name
-            update_game_name(cursor, game.id, game.name)
 
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
 
-def format_list_of_posts(cursor: Cursor, posts: list[Tuple]) -> str:
+def format_list_of_posts(posts: Iterable[Post]) -> str:
     """
     Wrapper method to format a list of message posts for replying on telegram
-    :param cursor:
     :param posts:
     :return:
     """
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
-    active_sales = list(filter(lambda x: x[1] is not None and x[0] == 'sale', posts))
-    active_searches = list(filter(lambda x: x[1] is not None and x[0] == 'search', posts))
+    active_sales = list(filter(lambda x: x.game is not None and x.post_type == 'sale', posts))
+    active_searches = list(filter(lambda x: x.game is not None and x.post_type == 'search', posts))
 
     sale_count = len(active_sales)
     search_count = len(active_searches)
@@ -60,11 +53,11 @@ def format_list_of_posts(cursor: Cursor, posts: list[Tuple]) -> str:
 
         if active_sales:
             formatted_sales = "\nActive sales:\n" + "\n".join(
-                [format_post(cursor, x, bgg_client) for x in active_sales[i:min(i+100, sale_count)]]
+                [format_post(x, bgg_client) for x in active_sales[i:min(i+100, sale_count)]]
             )
         if active_searches:
             formatted_searches = "\nActive searches:\n" + "\n".join(
-                [format_post(cursor, x, bgg_client) for x in active_searches[i:min(i+100, search_count)]]
+                [format_post(x, bgg_client) for x in active_searches[i:min(i+100, search_count)]]
             )
         reply = f"{formatted_sales}\n{formatted_searches}"
         yield textwrap.dedent(reply)
@@ -144,13 +137,8 @@ async def disable_command(update, _):
     if update.effective_chat.type == ChatType.GROUP:
         await update.message.set_reaction("👎")
     else:
-        conn = sqlite3.connect("database/meeple-matchmaker.db")
         user_id = update.message.from_user.id
-        with conn:
-            cur = conn.cursor()
-            disable_posts(cur, user_id, post_type=None, game_id=None)
-            conn.commit()
-        conn.close()
+        disable_posts(user_id=user_id)
 
 async def list_all_active_sales(update, _):
     """
@@ -163,16 +151,10 @@ async def list_all_active_sales(update, _):
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
-        conn = sqlite3.connect("database/meeple-matchmaker.db")
-        with conn:
-            cur = conn.cursor()
-            cur.arraysize = 100
-            data = read_posts(cur, user_id=None, post_type="sale")
-            reply = format_list_of_posts(cur, data)
-            for part in reply:
-                conn.commit()
-                await update.message.reply_text(part, parse_mode="Markdown")
-        conn.close()
+        data = read_posts(post_type="sale")
+        reply = format_list_of_posts(data)
+        for part in reply:
+            await update.message.reply_text(part, parse_mode="Markdown")
 
 async def list_all_active_searches(update, _):
     """
@@ -185,16 +167,10 @@ async def list_all_active_searches(update, _):
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
-        conn = sqlite3.connect("database/meeple-matchmaker.db")
-        with conn:
-            cur = conn.cursor()
-            cur.arraysize = 100
-            data = read_posts(cur, user_id=None, post_type="search")
-            reply = format_list_of_posts(cur, data)
-            for part in reply:
-                conn.commit()
-                await update.message.reply_text(part, parse_mode="Markdown")
-        conn.close()
+        data = read_posts(post_type="search")
+        reply = format_list_of_posts(data)
+        for part in reply:
+            await update.message.reply_text(part, parse_mode="Markdown")
 
 async def list_my_active_posts(update, _):
     """
@@ -207,14 +183,8 @@ async def list_my_active_posts(update, _):
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
-        conn = sqlite3.connect("database/meeple-matchmaker.db")
-        with conn:
-            cur = conn.cursor()
-            cur.arraysize = 100
-            user_id = update.message.from_user.id
-            data = read_posts(cur, user_id=user_id, post_type=None)
-            reply = format_list_of_posts(cur, data)
-            for part in reply:
-                conn.commit()
-                await update.message.reply_text(part, parse_mode="Markdown")
-        conn.close()
+        user_id = update.message.from_user.id
+        data = read_posts(user_id=user_id)
+        reply = format_list_of_posts(data)
+        for part in reply:
+            await update.message.reply_text(part, parse_mode="Markdown")

@@ -42,6 +42,7 @@ class TestMessageHandlers:
         game.save()
         post = Post(post_type=post_type, text=text, active=active, user=user, game=game)
         post.save()
+        return post
 
     @pytest.mark.parametrize(
         argnames="init_posts,new_messages,expected_replies",

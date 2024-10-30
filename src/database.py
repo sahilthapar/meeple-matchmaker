@@ -34,7 +34,7 @@ def read_posts(
     return data
 
 
-def disable_posts(user_id: int, post_type: Optional[str], game_id: Optional[int]) -> None:
+def disable_posts(user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None) -> None:
     user = User.get(telegram_userid=user_id)
 
     clauses = [
@@ -49,10 +49,3 @@ def disable_posts(user_id: int, post_type: Optional[str], game_id: Optional[int]
         clauses.append((Post.post_type == post_type))
 
     Post.update(active=False).where(reduce(operator.and_, clauses)).execute()
-
-def update_game_name(cursor, game_id: int, game_name: str) -> None:
-    sql = """
-    UPDATE post SET game_name = :game_name
-    WHERE game_id = :game_id
-    """
-    cursor.execute(sql, {"game_name": f'{game_name}', "game_id": game_id})
