@@ -86,8 +86,8 @@ class TestCommandHandlers:
         argnames="post,expected_response",
         argvalues=[
             (
-                # post_type, game_id, user_id, user_name, game_name
-                ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
+                # post_type, game_id, user_id, user_name, game_name, active
+                ('sale', 167791, '101', 'Jacob', "Terraforming Mars", 1),
                 "Terraforming Mars: [Jacob](tg://user?id=101)"
             ),
         ],
@@ -96,5 +96,12 @@ class TestCommandHandlers:
         ]
 
     )
-    def test_format_post(self, bgg_client, post, expected_response):
+    def test_format_post(self, bgg_client, database, post, expected_response):
+        init_tables(database)
+        post_type, game_id, user_id, user_name, game_name, active = post
+        post = TestMessageHandlers.initialize_post(
+                post_type=post_type, text='', active=active,
+                user_id=user_id, user_name=user_name,
+                game_id=game_id, game_name=game_name
+            )
         assert format_post(post, bgg_client) == textwrap.dedent(expected_response)
