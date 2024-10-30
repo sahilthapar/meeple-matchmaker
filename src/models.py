@@ -1,5 +1,6 @@
 from peewee import SqliteDatabase, Model
-from peewee import AutoField, IntegerField, TextField, BooleanField, ForeignKeyField
+from peewee import AutoField, IntegerField, TextField, BooleanField, ForeignKeyField, DateTimeField
+import datetime
 
 db = SqliteDatabase(None)
 
@@ -10,6 +11,7 @@ class User(Model):
     last_name = TextField(null=True)
     discord_handle = TextField(null=True, unique=True)
     bgg_username = TextField(null=True, unique=True)
+    updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
     class Meta:
         database = db
@@ -20,6 +22,7 @@ class Game(Model):
     game_name = TextField(null=True)
     game_id = IntegerField(unique=True)
     bgg_link = TextField(null=True)
+    updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
     class Meta:
         database = db
@@ -32,6 +35,7 @@ class Post(Model):
     active = BooleanField(default=True)
     user = ForeignKeyField(User)
     game = ForeignKeyField(Game)
+    updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
     class Meta:
         database = db

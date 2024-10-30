@@ -27,19 +27,16 @@ class LegacyPost(Model):
 data = LegacyPost.select().execute()
 print(len(data))
 
-db.create_tables([Post])
+db.create_tables([Post, User, Game])
 
 # Step 3: Create instances of new models, User, Game, Post and save them
 for lp in data:
-    print(model_to_dict(lp))
     game, _ = Game.get_or_create(game_id=lp.game_id)
     game.game_name = lp.game_name
-    print('Migrating Game: ', game.game_name)
     game.save()
 
     user, _ = User.get_or_create(telegram_userid=lp.user_id)
     user.first_name = lp.user_name
-    print('Migrating User: ', user.first_name)
     user.save()
 
     post = Post(
@@ -49,7 +46,6 @@ for lp in data:
         user=user,
         game=game
     )
-    print('Saving post: ', post.text)
     post.save()
 
 # Step 5: Validate data
