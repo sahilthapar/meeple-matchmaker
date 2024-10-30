@@ -2,9 +2,9 @@ from telegram import Message
 from typing import Optional, Tuple
 from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
-from types import SimpleNamespace
 import re
 
+from src.models import Game, User, Post
 
 log = getLogger()
 
@@ -23,7 +23,8 @@ TYPE_LOOKUP = {
 }
 
 def get_message_contents(message: Message) -> str:
-    return message.text or message.caption
+    text = message.text or message.caption
+    return text.lower() if text else ""
 
 def parse_tag(message: str) -> str:
     tag = re.search(
@@ -38,47 +39,80 @@ def parse_game_name(message: str) -> str:
     first_line = message.strip().split("\n")[0]
     return first_line.replace("game name:", "").replace("game:", "").strip()
 
-def get_game_details(game_name: str, bgg_client: BGGClient) -> Tuple:
+def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     try:
         log.info(f"Trying exact match for game: {game_name}")
+        # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
-            return game_exact.id, game_exact.name
+            return Game(
+                game_name=game_exact.name,
+                game_id=game_exact.id
+            )
     except BGGItemNotFoundError:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
             game_fuzzy = bgg_client.game(game_name, exact=False)
-            return game_fuzzy.id, game_fuzzy.name
+            return Game(
+                game_name=game_fuzzy.name,
+                game_id=game_fuzzy.id
+            )
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
-            return None, None
-    return None, None
+            return
+    return
 
-def parse_message(message: Message) -> Optional[SimpleNamespace]:
-    message_contents = get_message_contents(message)
-    log.info(message_contents)
-    raw_text = message_contents.lower() if message_contents else ""
-    user_id = message.from_user.id if message.from_user else None
-    user_name = message.from_user.first_name if message.from_user else None
+def create_user_from_message(message: Message) -> User:
+    """
+    Reads a telegram message, extracts user info and returns a User ORM
+    :param message:
+    :return:
+    """
+    return User(
+        telegram_userid=message.from_user.id,
+        first_name=message.from_user.first_name,
+        last_name=message.from_user.last_name
+    )
 
-    tag = parse_tag(raw_text)
-    message_without_tag = raw_text.replace(tag, "").strip()
+
+def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
+    """
+    Parses a telegram message to find details about game, user and the message
+    returns ORM for Post, Game, User
+    :param message:
+    :return:
+    """
+    # parse user info
+    user = create_user_from_message(message)
+
+    # parse text
+    message_text = get_message_contents(message)
+    log.info(message_text)
+    tag = parse_tag(message_text)
+    message_without_tag = message_text.replace(tag, "").strip()
     message_type = TYPE_LOOKUP.get(tag, None)
+
+    # if no post type found, exit
     if not message_type:
-        return None
+        return None,None,None
+
+    # parse game info
     game_name = parse_game_name(message_without_tag)
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7))
-    game_id, game_name = get_game_details(game_name, bgg_client)
-    if not game_id:
+    game = get_game_details(game_name, bgg_client)
+    if not game:
         log.warning("Game not found")
-        return None
-    return SimpleNamespace(
+        return None, None, None
+
+    post = Post(
         post_type=message_type,
-        text=raw_text,
-        game_id=game_id,
-        user_id=user_id,
-        user_name=user_name,
-        game_name=game_name,
-        to_db_tuple=(message_type, game_id, raw_text, user_id, user_name, 1, game_name)
+        text=message_text,
+        game_id=game.game_id,
+        user_id=user.telegram_userid,
+        user_name=user.first_name,
+        game_name=game.game_name,
+        active=1
     )
+
+    return post, game, user
 
