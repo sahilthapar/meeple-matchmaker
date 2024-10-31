@@ -45,6 +45,7 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
+            log.info("Found exact match")
             game, _ = Game.get_or_create(
                 game_name=game_exact.name,
                 game_id=game_exact.id
@@ -54,11 +55,13 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
             game_fuzzy = bgg_client.game(game_name, exact=False)
-            game, _ = Game.get_or_create(
-                game_name=game_fuzzy.name,
-                game_id=game_fuzzy.id
-            )
-            return game
+            if game_fuzzy:
+                log.info("Found fuzzy match")
+                game, _ = Game.get_or_create(
+                    game_name=game_fuzzy.name,
+                    game_id=game_fuzzy.id
+                )
+                return game
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return

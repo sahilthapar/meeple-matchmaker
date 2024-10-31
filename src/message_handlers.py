@@ -28,7 +28,7 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     :return:
     """
     log.info("Attempting to parse message")
-    post, game, user = parse_message(update.message) if update.message else None
+    post, game, user = parse_message(update.message) if update.message else (None, None, None)
     if not post or not game or not user:
         return
     if update.message:
