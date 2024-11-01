@@ -1,6 +1,7 @@
 import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
-from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details, get_message_contents
+from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
+                              get_game_details, get_message_contents, get_bgg_username_from_message)
 
 from src.models import Post, Game, User, db
 from src.database import init_tables
@@ -216,3 +217,16 @@ class TestMessageParsing:
         assert user.telegram_userid == user_id
         assert user.first_name == str(user_id * 100)
         assert user.last_name == str(user_id * 50)
+
+
+    @pytest.mark.parametrize(
+        argnames="message,bgg_username",
+        argvalues=[
+            ("#add_bgg_username sahilrhapar", "sahilrhapar"),
+            ("/add_bgg_username sahilrhapar", "sahilrhapar")
+        ],
+        ids=["hashtag", "slash"]
+    )
+    def test_get_bgg_username_from_message(self, mock_message, message, bgg_username):
+        mock_message.text = message
+        assert get_bgg_username_from_message(mock_message) == bgg_username
