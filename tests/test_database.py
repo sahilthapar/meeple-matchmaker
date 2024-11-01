@@ -1,164 +1,155 @@
 import pytest
-import sqlite3
-from src.database import init_post_db, read_post_db, write_to_post_db, disable_posts, read_user_posts
-from src.telegrampost import parse_message
+from src.database import init_tables, read_posts, disable_posts
+from src.models import User, Game, Post, db
 
 
 class TestDatabase:
 
-    @pytest.fixture(name="post")
-    def post(self, mocker):
-        message = mocker.patch("telegram.Message")
-        message.text = "#seekingInterest Terraforming Mars"
-        message.from_user.id = 101
-        message.from_user.first_name = "Jacob"
-        return parse_message(message)
+    @staticmethod
+    def _post_model_to_tuple(post: Post):
+        return post.post_type, post.game.game_id, post.user.first_name, post.active, post.game.game_name
 
-    @pytest.fixture(name="sample_data_tuple")
-    def sample_data_tuple(self):
-        return 'sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, 'Terraforming Mars'
+    @pytest.fixture(name="database")
+    def database(self):
+        db.init(":memory:")
+        return db
 
-    @pytest.fixture(name="sample_data_tuples")
-    def sample_data_tuples(self):
-        return [
-            ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, 'Terraforming Mars'),
-            ('search', 167791, '#lookingfor terraforming mars', '102', 'Henry', 1, 'Terraforming Mars'),
-            ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, 'Ark Nova'),
-            ('sale', 999, '#selling destinies', '104', 'Marcus', 0, 'Destinies'),
-            ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1, 'Monopoly'),
-            ('search', 345, '#lookingfor wingspan', '103', 'Cristiano', 0, 'Wingspan'),
-        ]
+    @pytest.fixture(name="sample_posts")
+    def sample_posts(self, database):
+        init_tables(database)
+        jacob = User(telegram_userid=101, first_name='Jacob')
+        henry = User(telegram_userid=102, first_name='Henry')
+        marcus = User(telegram_userid=103, first_name='Marcus')
+        cristiano = User(telegram_userid=107, first_name='Cristiano')
+        for user in [jacob, henry, marcus, cristiano]:
+            user.save()
 
-    @pytest.fixture(name="con")
-    def con(self):
-        return sqlite3.connect(":memory:")
+        tfm = Game(game_id=167791, game_name='Terraforming Mars')
+        ark_nova = Game(game_id=321, game_name='Ark Nova')
+        destinies = Game(game_id=999, game_name='Destinies')
+        monopoly = Game(game_id=123, game_name='Monopoly')
+        wingspan = Game(game_id=345, game_name='Wingspan')
 
-    @pytest.fixture(name="cursor")
-    def cursor(self, con):
-        return con.cursor()
+        for game in [tfm, ark_nova, destinies, monopoly, wingspan]:
+            game.save()
 
-    def test_init_post_db(self, cursor):
-        init_post_db(cursor)
-        data = cursor.execute("SELECT sql FROM sqlite_schema WHERE NAME = 'post'")
-        assert len(list(data)) == 1
+        Post(post_type='sale', text='#seekinginterest terraforming mars', active=True, user=jacob, game=tfm).save()
+        Post(post_type='search', text='#lookingfor terraforming mars', active=True, user=henry, game=tfm).save()
+        Post(post_type='sale', text='#selling ark nova', active=True, user=jacob, game=ark_nova).save()
+        Post(post_type='sale', text='#selling destinies', active=False, user=marcus, game=destinies).save()
+        Post(post_type='search', text='#lookingfor monopoly', active=True, user=jacob, game=monopoly).save()
+        Post(post_type='search', text='#lookingfor wingspan', active=False, user=cristiano, game=wingspan).save()
 
-    def test_write_to_post_db(self, con, cursor, post, sample_data_tuple):
-        init_post_db(cursor)
+    def test_init_tables(self, database):
+        init_tables(database)
+        data = database.get_tables()
 
-        write_to_post_db(cursor, [post])
-        con.commit()
-
-        data = cursor.execute("SELECT * FROM post")
-        assert list(data) == [sample_data_tuple]
-
-    def test_read_post_db_by_id(self, con, cursor, post, sample_data_tuples):
-        init_post_db(cursor)
-        cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
-            sample_data_tuples
-        )
-        con.commit()
-        expected_data = [('102', 'Henry')]
-        # by game id
-        data = read_post_db(cursor, game_id=167791, post_type="search")
-        assert list(data) == expected_data
-
-    def test_read_post_db_by_type(self, con, cursor, post, sample_data_tuples):
-        init_post_db(cursor)
-        cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
-            sample_data_tuples
-        )
-        con.commit()
-        expected_data = [('101', 'Jacob')]
-        # by game id
-        data = read_post_db(cursor, game_id=167791, post_type="sale")
-        assert list(data) == expected_data
+        assert data == ['game', 'user', 'user_post']
 
     @pytest.mark.parametrize(
-        argnames="post_type,game_id,expected_data",
+        argnames="post_type,game_id,expected_inactives",
         argvalues=[
             # disable_all
-            (None, None, []),
+            (
+                    None,
+                    None,
+                    [
+                        ('sale', 167791, 'Jacob', False, 'Terraforming Mars'),
+                        ('sale', 321, 'Jacob', False, 'Ark Nova'),
+                        ('search', 123, 'Jacob', False, 'Monopoly')
+                    ]
+            ),
             # disable terraforming sale for Jacob
             (
-                'sale',
-                167791,
-                [
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, "Ark Nova"),
-                    ('search', 123, '#lookingfor monopoly', '101', 'Jacob', 1, "Monopoly"),
-                ]
+                    'sale',
+                    167791,
+
+                    [
+                        ('sale', 167791, 'Jacob', False, 'Terraforming Mars'),
+                    ]
             ),
             # disable monopoly search for Jacob
             (
-                'search',
-                123,
-                [
-                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'Jacob', 1, "Terraforming Mars"),
-                    ('sale', 321, '#selling ark nova', '101', 'Jacob', 1, "Ark Nova"),
-                ]
+                    'search',
+                    123,
+                    [
+                        ('search', 123, 'Jacob', False, 'Monopoly')
+                    ]
             )
         ],
         ids=["disable_all", "disable_sold_tfm", "disable_found_monopoly"]
     )
-    def test_disable_posts_all(self, con, cursor, post, sample_data_tuples, post_type, game_id, expected_data):
-        init_post_db(cursor)
-        cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
-            sample_data_tuples
-        )
-        con.commit()
-        # by game id
-        disable_posts(cursor, user_id=101, post_type=post_type, game_id=game_id)
-        data = cursor.execute("SELECT * FROM post WHERE user_id = 101 and active = 1")
-        assert list(data) == expected_data
+    def test_disable_posts_all(self, sample_posts, post_type, game_id, expected_inactives):
+        jacob = User.get(telegram_userid=101)
+
+        disable_posts(user_id=jacob.telegram_userid, post_type=post_type, game_id=game_id)
+
+        #ruff: noqa: E712
+        jacobs_inactive_posts = Post.select().where((Post.active == False) & (Post.user == jacob)).execute()
+        actual_inactives = [
+            self._post_model_to_tuple(post) for post in jacobs_inactive_posts
+        ]
+
+        assert actual_inactives == expected_inactives
 
     @pytest.mark.parametrize(
-        argnames="post_type, user_id, expected_data",
+        argnames="user_id, post_type, game_id, expected_data",
         argvalues=[
             (
-                "sale",
-                None,
-                [
-                    ('sale', 321, '101', 'Jacob', "Ark Nova"),
-                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
-                ]
+                    None,
+                    "search",
+                    167791,
+                    [
+                        ('search', 167791, 'Henry', True, 'Terraforming Mars'),
+                    ]
             ),
             (
-                "search",
-                None,
-                [
-                    ('search', 123, '101', 'Jacob', "Monopoly"),
-                    ('search', 167791, '102', 'Henry', "Terraforming Mars"),
-                ]
+                    None,
+                    "sale",
+                    167791,
+                    [
+                        ('sale', 167791, 'Jacob', True, 'Terraforming Mars'),
+                    ]
             ),
             (
-                None,
-                101,
-                [
-                    ('sale', 321, '101', 'Jacob', "Ark Nova"),
-                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
-                    ('search', 123, '101', 'Jacob', "Monopoly"),
-                ]
+                    None,
+                    "sale",
+                    None,
+                    [
+                        ('sale', 321, 'Jacob', True, 'Ark Nova'),
+                        ('sale', 167791, 'Jacob', True, 'Terraforming Mars'),
+                    ]
+            ),
+            (
+                    None,
+                    "search",
+                    None,
+                    [
+                        ('search', 123, 'Jacob', True, "Monopoly"),
+                        ('search', 167791, 'Henry', True, "Terraforming Mars"),
+                    ]
+            ),
+            (
+                    101,
+                    None,
+                    None,
+                    [
+                        ('sale', 321, 'Jacob', True, "Ark Nova"),
+                        ('sale', 167791, 'Jacob', True, "Terraforming Mars"),
+                        ('search', 123, 'Jacob', True, "Monopoly"),
+                    ]
             ),
         ],
         ids=[
+            "search_tfm",
+            "sale_tfm",
             "list_all_active_sales",
             "list_all_active_searches",
             "list_all_active_posts_for_user"
         ]
     )
-    def test_read_user_posts(self, con, cursor, post, sample_data_tuples,
-                             post_type, user_id, expected_data):
-        init_post_db(cursor)
-        cursor.executemany(
-            'INSERT INTO post (post_type, game_id, text, user_id, user_name, active, game_name) VALUES (?,?,?,?,?,?,?)',
-            sample_data_tuples
-        )
-        con.commit()
-        data = read_user_posts(cursor, post_type=post_type, user_id=user_id)
-        assert list(data) == expected_data
+    def test_read_posts(self, sample_posts, user_id, post_type, game_id, expected_data):
 
-
-
-
+        posts = read_posts(post_type=post_type, user_id=user_id, game_id=game_id)
+        posts = [self._post_model_to_tuple(post) for post in posts]
+        assert posts == expected_data

@@ -1,7 +1,10 @@
 import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
-from src.telegrampost import parse_tag, TYPE_LOOKUP, parse_game_name, parse_message, get_game_details, get_message_contents
+from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
+                              get_game_details, get_message_contents, get_bgg_username_from_message)
 
+from src.models import Post, Game, User, db
+from src.database import init_tables
 
 class TestMessageParsing:
 
@@ -12,6 +15,11 @@ class TestMessageParsing:
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
         return mocker.patch("telegram.Message")
+
+    @pytest.fixture(name="initialize_db")
+    def initialize_db(self):
+        db.init(":memory:")
+        init_tables(db)
 
     @pytest.mark.parametrize(
         argnames="msg_type, msg_contents",
@@ -32,7 +40,7 @@ class TestMessageParsing:
             mock_message.text = None
             mock_message.caption = msg_contents
 
-        assert get_message_contents(mock_message) == msg_contents
+        assert get_message_contents(mock_message) == msg_contents.lower()
 
     @pytest.mark.parametrize(
         argnames="message, expected",
@@ -156,10 +164,13 @@ class TestMessageParsing:
         ]
 
     )
-    def test_get_game(self, bgg_client, game_name, expected_game_id, expected_game_name):
-        game_id, game_name = get_game_details(game_name, bgg_client)
-        assert game_id == expected_game_id
-        assert game_name == expected_game_name
+    def test_get_game(self, bgg_client, initialize_db, game_name, expected_game_id, expected_game_name):
+        game = get_game_details(game_name, bgg_client)
+        if not expected_game_id:
+            assert game is None
+        else:
+            assert game.game_id == expected_game_id
+            assert game.game_name == expected_game_name
 
     @pytest.mark.parametrize(
         argnames="message, user_id, expected_type, expected_game_id, expected_game_name",
@@ -175,18 +186,47 @@ class TestMessageParsing:
         ]
 
     )
-    def test_parse_message(self, mock_message, message, user_id, expected_type, expected_game_id, expected_game_name):
+    def test_parse_message(self, mock_message, initialize_db, message, user_id, expected_type, expected_game_id, expected_game_name):
         mock_message.text = message
         mock_message.from_user.id = user_id
         mock_message.from_user.first_name = str(user_id * 100)
+        mock_message.from_user.last_name = str(user_id * 50)
 
-        post = parse_message(mock_message)
+        post, game, user = parse_message(mock_message)
+
         if not post:
             assert post == expected_game_id
             return
+
+        # check post
+        assert isinstance(post, Post)
         assert post.post_type == expected_type
-        assert post.game_id == expected_game_id
-        assert post.user_id == user_id
-        assert post.user_name == str(user_id * 100)
-        assert post.game_name == expected_game_name
-        assert post.to_db_tuple == (expected_type, expected_game_id, message.lower(), user_id, str(user_id * 100), 1, expected_game_name)
+        assert post.game.game_id == expected_game_id
+        assert post.user.telegram_userid == user_id
+        assert post.user.first_name == str(user_id * 100)
+        assert post.game.game_name == expected_game_name
+        assert post.active == 1
+
+        # check game
+        assert isinstance(game, Game)
+        assert game.game_id == expected_game_id
+        assert game.game_name == expected_game_name
+
+        # check user
+        assert isinstance(user, User)
+        assert user.telegram_userid == user_id
+        assert user.first_name == str(user_id * 100)
+        assert user.last_name == str(user_id * 50)
+
+
+    @pytest.mark.parametrize(
+        argnames="message,bgg_username",
+        argvalues=[
+            ("#add_bgg_username sahilrhapar", "sahilrhapar"),
+            ("/add_bgg_username sahilrhapar", "sahilrhapar")
+        ],
+        ids=["hashtag", "slash"]
+    )
+    def test_get_bgg_username_from_message(self, mock_message, message, bgg_username):
+        mock_message.text = message
+        assert get_bgg_username_from_message(mock_message) == bgg_username

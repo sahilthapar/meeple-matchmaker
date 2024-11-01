@@ -1,31 +1,30 @@
 import pytest
-import sqlite3
 import textwrap
 from boardgamegeek import BGGClient
 
 from src.command_handlers import format_list_of_posts, format_post
+from src.models import db
+from tests.test_message_handlers import TestMessageHandlers
+from src.database import init_tables
 
 class TestCommandHandlers:
-    @pytest.fixture(name="con")
-    def con(self):
-        return sqlite3.connect(":memory:")
-
-    @pytest.fixture(name="cursor")
-    def cursor(self, con):
-        return con.cursor()
-
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
         return BGGClient()
+
+    @pytest.fixture(name="database")
+    def database(self):
+        db.init(":memory:")
+        return db
 
     @pytest.mark.parametrize(
         argnames="posts,expected_reply",
         argvalues=[
             (   # post_type, game_id, user_id, user_name, game_name
                 [
-                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
-                    ('sale', 167791, '103', 'Vikrant', "Terraforming Mars"),
-                    ('sale', 342942, '101', 'Jacob', 'Ark Nova'),
+                    ('sale', 167791, '101', 'Jacob', "Terraforming Mars", 1),
+                    ('sale', 167791, '103', 'Vikrant', "Terraforming Mars", 1),
+                    ('sale', 342942, '101', 'Jacob', 'Ark Nova', 1),
                 ],
                 "\nActive sales:"
                 "\nTerraforming Mars: [Jacob](tg://user?id=101)"
@@ -70,15 +69,25 @@ class TestCommandHandlers:
         ]
 
     )
-    def test_format_list_of_posts(self, cursor, posts, expected_reply):
-        assert list(format_list_of_posts(cursor, posts))[0] == textwrap.dedent(expected_reply)
+    def test_format_list_of_posts(self, database, posts, expected_reply):
+        init_tables(database)
+        posts_orm = []
+        for post_type, game_id, user_id, user_name, game_name, active in posts:
+            posts_orm.append(
+                TestMessageHandlers.initialize_post(
+                    post_type=post_type, text='', active=active,
+                    user_id=user_id, user_name=user_name,
+                    game_id=game_id, game_name=game_name
+                )
+            )
+        assert list(format_list_of_posts(posts_orm))[0] == textwrap.dedent(expected_reply)
 
     @pytest.mark.parametrize(
         argnames="post,expected_response",
         argvalues=[
             (
-                # post_type, game_id, user_id, user_name, game_name
-                ('sale', 167791, '101', 'Jacob', "Terraforming Mars"),
+                # post_type, game_id, user_id, user_name, game_name, active
+                ('sale', 167791, '101', 'Jacob', "Terraforming Mars", 1),
                 "Terraforming Mars: [Jacob](tg://user?id=101)"
             ),
         ],
@@ -87,6 +96,12 @@ class TestCommandHandlers:
         ]
 
     )
-    def test_format_post(self, cursor, bgg_client, post, expected_response):
-        assert format_post(cursor, post, bgg_client) == textwrap.dedent(expected_response)
-
+    def test_format_post(self, bgg_client, database, post, expected_response):
+        init_tables(database)
+        post_type, game_id, user_id, user_name, game_name, active = post
+        post = TestMessageHandlers.initialize_post(
+                post_type=post_type, text='', active=active,
+                user_id=user_id, user_name=user_name,
+                game_id=game_id, game_name=game_name
+            )
+        assert format_post(post, bgg_client) == textwrap.dedent(expected_response)
