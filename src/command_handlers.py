@@ -3,6 +3,7 @@ import textwrap
 import logging
 from typing import Iterable
 from src.models import Post
+from src.telegrampost import create_user_from_message, get_bgg_username_from_message
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
@@ -188,3 +189,15 @@ async def list_my_active_posts(update, _):
         reply = format_list_of_posts(data)
         for part in reply:
             await update.message.reply_text(part, parse_mode="Markdown")
+
+async def add_bgg_username(update, _):
+    user = create_user_from_message(update.message)
+    bgg_username = get_bgg_username_from_message(update.message)
+
+    user.bgg_username = bgg_username
+    user.save()
+
+    # if update.effective_chat.type != "private":
+    #     await update.message.set_reaction("👎")
+    await update.message.set_reaction("👍")
+
