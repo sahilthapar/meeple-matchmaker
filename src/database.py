@@ -27,9 +27,11 @@ def read_posts(
         game = Game.get(game_id=game_id)
         clauses.append((Post.game == game))
 
-    data = Post.select()\
+    data = Post\
+        .select(Post.post_type, Post.user, Post.game, Post.active)\
         .where(reduce(operator.and_, clauses))\
         .order_by(Post.post_type, -Post.game, Post.user)\
+        .distinct()\
         .execute()
     return data
 
