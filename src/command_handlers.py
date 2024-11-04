@@ -2,10 +2,11 @@
 import textwrap
 import logging
 from typing import Iterable
-from src.models import Post
+from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_bgg_username_from_message
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
+from boardgamegeek.objects.games import CollectionBoardGame
 from telegram.constants import ChatType
 
 
@@ -201,3 +202,54 @@ async def add_bgg_username(update, _):
     #     await update.message.set_reaction("👎")
     await update.message.set_reaction("👍")
 
+
+def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
+    if game.for_trade:
+        return 'sale'
+
+    if game.want_to_buy or game.wishlist:
+        return 'search'
+
+async def import_my_bgg_collection(update, _):
+    # find user's bgg username
+    # raise exception if no bgg username exists
+    user = create_user_from_message(update.message)
+    if not user.bgg_username:
+        await update.message.reply_text(
+            "No BGG username found! Please attach a BGG User using the command /add_bgg_username"
+        )
+        await update.message.set_reaction("👎")
+
+        raise KeyError("No BGG username found! Please attach a BGG User")
+    # post a request to bgg to get a user's collection
+    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
+
+    bgg_collection = bgg_client.collection(user_name=user.bgg_username)
+    # create a UserCollection model from it
+    # insert into the post table every "for trade", "wishlist" item
+
+    for item in bgg_collection.items:
+        game_id = item.id
+        game_name = item.name
+        game, _ = Game.get_or_create(game_id=game_id)
+        game.game_name = game_name
+        game.save()
+        user_collection, _ = UserCollection.get_or_create(
+            user=user,
+            game=game
+        )
+        status = get_status_from_bgg_game(item)
+        if not status:
+            continue
+        user_collection.status = status
+        user_collection.save()
+
+        post, _ = Post.get_or_create(
+            post_type=user_collection.status,
+            user=user,
+            game=game
+        )
+        post.active = True
+        post.save()
+    await update.message.set_reaction("👍")
+    # todo: add a new command to "match me" that will respond with all possible matches sales or searches

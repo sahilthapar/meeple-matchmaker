@@ -5,6 +5,9 @@ import datetime
 db = SqliteDatabase(None)
 
 class User(Model):
+    """
+    Represents a User
+    """
     id = AutoField()
     telegram_userid = IntegerField(unique=True)
     first_name = TextField(null=True)
@@ -18,6 +21,9 @@ class User(Model):
         table_name = 'user'
 
 class Game(Model):
+    """
+    Represents a BGG Game
+    """
     id = AutoField()
     game_name = TextField(null=True)
     game_id = IntegerField(unique=True)
@@ -29,6 +35,13 @@ class Game(Model):
         table_name = 'game'
 
 class Post(Model):
+    """
+    Represents a telegram message (post)
+    Parsed info contains
+    - game info
+    - user info
+    - active status
+    """
     id = AutoField()
     post_type = TextField()
     text = TextField()
@@ -40,3 +53,17 @@ class Post(Model):
     class Meta:
         database = db
         table_name = 'user_post'
+
+class UserCollection(Model):
+    """
+    Represents a User's collection of games
+    """
+    id = AutoField()
+    user = ForeignKeyField(User)
+    game = ForeignKeyField(Game)
+    status = TextField()
+    updated_at = DateTimeField(default=datetime.datetime.utcnow)
+
+    class Meta:
+        database = db
+        table_name = 'user_collection'
