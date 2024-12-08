@@ -1,7 +1,7 @@
 import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
 from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
-                              get_game_details, get_message_contents, get_bgg_username_from_message)
+                              get_game_details, get_message_contents, get_message_without_command)
 
 from src.models import Post, Game, User, db
 from src.database import init_tables
@@ -218,7 +218,6 @@ class TestMessageParsing:
         assert user.first_name == str(user_id * 100)
         assert user.last_name == str(user_id * 50)
 
-
     @pytest.mark.parametrize(
         argnames="message,bgg_username",
         argvalues=[
@@ -227,6 +226,6 @@ class TestMessageParsing:
         ],
         ids=["hashtag", "slash"]
     )
-    def test_get_bgg_username_from_message(self, mock_message, message, bgg_username):
+    def test_get_message_without_command(self, mock_message, message, bgg_username):
         mock_message.text = message
-        assert get_bgg_username_from_message(mock_message) == bgg_username
+        assert get_message_without_command(mock_message) == bgg_username

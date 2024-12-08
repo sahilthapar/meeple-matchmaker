@@ -81,10 +81,9 @@ def create_user_from_message(message: Message) -> User:
 
     return user
 
-def get_bgg_username_from_message(message: Message) -> str:
+def get_message_without_command(message: Message) -> str:
     text = get_message_contents(message)
     return text.split(" ")[1]
-
 
 def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
     """
