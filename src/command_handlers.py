@@ -195,6 +195,9 @@ async def list_my_active_posts(update, _):
 async def add_bgg_username(update, _):
     log.info("/add_bgg_username")
     user = create_user_from_message(update.message)
+    # if update.effective_chat.type != "private":
+    #     await update.message.set_reaction("👎")
+    # else:
     try:
         bgg_username = get_bgg_username_from_message(update.message)
         user.bgg_username = bgg_username
@@ -209,8 +212,6 @@ async def add_bgg_username(update, _):
         )
         await update.message.set_reaction("👎")
 
-    # if update.effective_chat.type != "private":
-    #     await update.message.set_reaction("👎")
 
 
 def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
@@ -234,8 +235,9 @@ async def import_my_bgg_collection(update, _):
     :return:
     """
     user = create_user_from_message(update.message)
-    if update.effective_chat.type != "private":
-        await update.message.set_reaction("👎")
+    # if update.effective_chat.type != "private":
+    #     await update.message.set_reaction("👎")
+    # else:
     if not user.bgg_username:
         await update.message.reply_text(
             "No BGG username found! Please attach a BGG User using the command /add_bgg_username <your-username>"
@@ -282,8 +284,8 @@ async def match_me(update, _):
     :param _:
     :return:
     """
-    if update.effective_chat.type != "private":
-        await update.message.set_reaction("👎")
+    # if update.effective_chat.type != "private":
+    #     await update.message.set_reaction("👎")
     user = create_user_from_message(update.message)
     posts = read_posts(user_id=user.telegram_userid)
 
