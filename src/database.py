@@ -1,4 +1,4 @@
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Union
 
 from peewee import SqliteDatabase
 from src.models import Post, User, Game
@@ -12,7 +12,7 @@ def init_tables(db: SqliteDatabase) -> None:
 def read_posts(
         user_id: Optional[int] = None,
         post_type: Optional[str] = None,
-        game_id: Optional[int] = None,
+        game_id: Optional[Union[int, list[int]]] = None,
         is_active: Optional[bool] = True
 ) -> Iterable[Post]:
 
@@ -24,16 +24,19 @@ def read_posts(
     if post_type:
         clauses.append((Post.post_type == post_type))
     if game_id:
-        game = Game.get(game_id=game_id)
-        clauses.append((Post.game == game))
+        # change to a sub-query
+        if isinstance(game_id, int):
+            game_id = [game_id]
+        games = Game.select().where(Game.game_id << game_id)
+
+        clauses.append((Post.game.in_(games)))
 
     data = Post\
         .select(Post.post_type, Post.user, Post.game, Post.active)\
         .where(reduce(operator.and_, clauses))\
         .order_by(Post.post_type, -Post.game, Post.user)\
-        .distinct()\
-        .execute()
-    return data
+        .distinct()
+    return data.execute()
 
 
 def disable_posts(user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None) -> None:

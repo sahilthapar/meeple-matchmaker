@@ -4,6 +4,7 @@ import logging
 from typing import Iterable
 from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_bgg_username_from_message
+from itertools import chain
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from boardgamegeek.objects.games import CollectionBoardGame
@@ -42,8 +43,8 @@ def format_list_of_posts(posts: Iterable[Post]) -> str:
     :return:
     """
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
-    active_sales = list(filter(lambda x: x.game is not None and x.post_type == 'sale', posts))
-    active_searches = list(filter(lambda x: x.game is not None and x.post_type == 'search', posts))
+    active_sales = [x for x in posts if x.post_type == 'sale']
+    active_searches = [x for x in posts if x.post_type == 'search']
 
     sale_count = len(active_sales)
     search_count = len(active_searches)
@@ -192,15 +193,24 @@ async def list_my_active_posts(update, _):
             await update.message.reply_text(part, parse_mode="Markdown")
 
 async def add_bgg_username(update, _):
+    log.info("/add_bgg_username")
     user = create_user_from_message(update.message)
-    bgg_username = get_bgg_username_from_message(update.message)
-
-    user.bgg_username = bgg_username
-    user.save()
+    try:
+        bgg_username = get_bgg_username_from_message(update.message)
+        user.bgg_username = bgg_username
+        user.save()
+        await update.message.set_reaction("👍")
+    except IndexError:
+        await update.message.reply_text(
+            "Invalid username! Add username after the command. Copy the example below."
+        )
+        await update.message.reply_text(
+            "/add_bgg_username my-username"
+        )
+        await update.message.set_reaction("👎")
 
     # if update.effective_chat.type != "private":
     #     await update.message.set_reaction("👎")
-    await update.message.set_reaction("👍")
 
 
 def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
@@ -211,24 +221,34 @@ def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
         return 'search'
 
 async def import_my_bgg_collection(update, _):
-    # find user's bgg username
-    # raise exception if no bgg username exists
+    """
+    Handler for command /import_my_bgg_collection
+
+    - find user's bgg username
+        - raise exception if no bgg username exists
+    - post a request to bgg to get a user's collection
+        - create a UserCollection model from it
+    - insert into the post table every "for trade", "wishlist" item
+    :param update:
+    :param _:
+    :return:
+    """
     user = create_user_from_message(update.message)
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
     if not user.bgg_username:
         await update.message.reply_text(
-            "No BGG username found! Please attach a BGG User using the command /add_bgg_username"
+            "No BGG username found! Please attach a BGG User using the command /add_bgg_username <your-username>"
         )
         await update.message.set_reaction("👎")
 
         raise KeyError("No BGG username found! Please attach a BGG User")
-    # post a request to bgg to get a user's collection
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
 
+    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
     bgg_collection = bgg_client.collection(user_name=user.bgg_username)
-    # create a UserCollection model from it
-    # insert into the post table every "for trade", "wishlist" item
 
     for item in bgg_collection.items:
+        # todo: refactor all code like this into method of the class, "find_and_update"
         game_id = item.id
         game_name = item.name
         game, _ = Game.get_or_create(game_id=game_id)
@@ -252,4 +272,31 @@ async def import_my_bgg_collection(update, _):
         post.active = True
         post.save()
     await update.message.set_reaction("👍")
-    # todo: add a new command to "match me" that will respond with all possible matches sales or searches
+
+async def match_me(update, _):
+    """
+    Handler for command /match_me
+    Finds through the users entire active posts
+    Searches for matches for each of the games
+    :param update:
+    :param _:
+    :return:
+    """
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
+    user = create_user_from_message(update.message)
+    posts = read_posts(user_id=user.telegram_userid)
+
+    user_searches = [p for p in posts if p.post_type == 'search']
+    user_sales = [p for p in posts if p.post_type == 'sale']
+
+    matched_searches = read_posts(game_id=[search.game.game_id for search in user_searches],
+                                  post_type='sale')
+    matched_sales = read_posts(game_id=[sale.game.game_id for sale in user_sales],
+                               post_type='search')
+
+    reply_sales = format_list_of_posts(matched_searches)
+    reply_searches = format_list_of_posts(matched_sales)
+
+    for part in chain(reply_searches, reply_sales):
+        await update.message.reply_text(part, parse_mode="Markdown")
