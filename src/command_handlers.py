@@ -3,7 +3,7 @@ import textwrap
 import logging
 from typing import Iterable
 from src.models import Post
-from src.telegrampost import create_user_from_message, get_bgg_username_from_message
+from src.telegrampost import create_user_from_message, get_message_without_command
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from telegram.constants import ChatType
@@ -192,7 +192,7 @@ async def list_my_active_posts(update, _):
 
 async def add_bgg_username(update, _):
     user = create_user_from_message(update.message)
-    bgg_username = get_bgg_username_from_message(update.message)
+    bgg_username = get_message_without_command(update.message)
 
     user.bgg_username = bgg_username
     user.save()
@@ -201,3 +201,23 @@ async def add_bgg_username(update, _):
     #     await update.message.set_reaction("👎")
     await update.message.set_reaction("👍")
 
+
+async def disable_user(update, _):
+    """
+    Takes in a request to disable a user
+    Must be requested by an admin only
+    :param update:
+    :param _:
+    :return:
+    """
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
+        return
+
+    if update.message.from_user.id != 995823071:
+        await update.message.reply_text("Sorry this command is only available to the admin!")
+        return
+
+    user_to_disable = get_message_without_command(update.message)
+    disable_posts(user_id=int(user_to_disable))
+    await update.message.set_reaction("👍")
