@@ -58,13 +58,8 @@ The bot will reply to Tanuj's message and tag Deepak and Chaitanya
 
 | Command                    | Description                                           | Private / Group Support     | Notes                                                                                      |
 |----------------------------|-------------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------|
-| #lookingfor game_name      | Adds game_name to your search list                    | Both Private and Group Chat |                                                                                            |
-| #looking game_name         | Adds game_name to your search list                    | Both Private and Group Chat |                                                                                            |
-| #iso game_name             | Adds game_name to your search list                    | Both Private and Group Chat |                                                                                            |
-| #sale game_name            | Adds game_name to your sale list                      | Both Private and Group Chat |                                                                                            |
-| #seekinginterest game_name | Adds game_name to your sale list                      | Both Private and Group Chat |                                                                                            |
-| #sell game_name            | Adds game_name to your sale list                      | Both Private and Group Chat |                                                                                            |
-| #auction game_name         | Adds game_name to your sale list                      | Both Private and Group Chat |                                                                                            |
+| #lookingfor game_name      | Adds game_name to your search list                    | Both Private and Group Chat | Supported tags are #lookingfor, #looking, #iso                                             |
+| #sale game_name            | Adds game_name to your sale list                      | Both Private and Group Chat | Supported tags are #sale, #seekinginterest, #selling, #auction                             |
 | #sold game_name            | Removes game_name from your sale list                 | Both Private and Group Chat |                                                                                            |
 | #found game_name           | Removes game_name from your search list               | Both Private and Group Chat |                                                                                            |
 | /start                     | Gives a detailed message explaining what the bot does | Private Only                |                                                                                            |

@@ -23,3 +23,22 @@ You can do this by sending a DM (direct message) to the bot
 if the game you're having issues with has them, try without the special characters 
 - If you still have a problem with it, 
 please create an issue on GitHub with as much detail as possible
+
+### How can I import my BGG Collection to Matchmaker bot?
+Matchmaker bot support adding the following games from your collection
+- "For Trade" - these games will be added as active sales to the bot
+- "Wishlist" or "Want to Buy" - these games will be added as active searches to the bot
+
+Follow these steps in PRIVATE CHAT / DM with the meeple-matchmaker bot
+1. Attach a BGG Username to your account `/add_bgg_username your_username`
+2. Import your collection `/import_my_collection`
+
+Your collection is now added to the matchmaker bot.
+
+You can use
+- `/list_my_posts` to confirm all your active post
+- `/match_me` to find matches for all your posts
+
+### What commands are supported by the matchmaker bot?
+[See this](README.md#supported-commands)
+
