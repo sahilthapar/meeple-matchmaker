@@ -2,6 +2,7 @@
 * [meeple-matchmaker](#meeple-matchmaker)
   * [How does it work?](#how-does-it-work)
   * [Example:](#example)
+  * [Supported Commands](#supported-commands)
 <!-- TOC -->
 
 # meeple-matchmaker
