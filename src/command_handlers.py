@@ -97,24 +97,8 @@ async def start_command(update, _):
     *Important: Keep the first line of your message limited to only these two things a hashtag and a game name (as seen on BGG).
     All other details like condition, price, location should be present only in a new line*
     
-    *Example:*
-    
-    Deepak posts a message
-    ```
-    #lookingfor Ark Nova
-    ```
-    Chaitanya posts a message
-    ```
-    #lookingfor Ark Nova
-    ```
-    Tanuj posts a message a few days later
-    ```
-    #seekinginterest Ark Nova
-    ```
-    The bot will reply to Tanuj's message and tag Deepak and Chaitanya
-    ```
-    @Deepak @Chaitanya
-    ```
+    *For more details and a complete list of supported features and commands *
+    [Check out this README](https://github.com/sahilthapar/meeple-matchmaker/blob/main/README.md)
     
     *Have questions?*
     [Check out this FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
@@ -195,22 +179,22 @@ async def list_my_active_posts(update, _):
 async def add_bgg_username(update, _):
     log.info("/add_bgg_username")
     user = create_user_from_message(update.message)
-    # if update.effective_chat.type != "private":
-    #     await update.message.set_reaction("👎")
-    # else:
-    try:
-        bgg_username = get_message_without_command(update.message)
-        user.bgg_username = bgg_username
-        user.save()
-        await update.message.set_reaction("👍")
-    except IndexError:
-        await update.message.reply_text(
-            "Invalid username! Add username after the command. Copy the example below."
-        )
-        await update.message.reply_text(
-            "/add_bgg_username my-username"
-        )
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
+    else:
+        try:
+            bgg_username = get_message_without_command(update.message)
+            user.bgg_username = bgg_username
+            user.save()
+            await update.message.set_reaction("👍")
+        except IndexError:
+            await update.message.reply_text(
+                "Invalid username! Add username after the command. Copy the example below."
+            )
+            await update.message.reply_text(
+                "/add_bgg_username my-username"
+            )
+            await update.message.set_reaction("👎")
 
 
 def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
@@ -234,45 +218,54 @@ async def import_my_bgg_collection(update, _):
     :return:
     """
     user = create_user_from_message(update.message)
-    # if update.effective_chat.type != "private":
-    #     await update.message.set_reaction("👎")
-    # else:
-    if not user.bgg_username:
-        await update.message.reply_text(
-            "No BGG username found! Please attach a BGG User using the command /add_bgg_username <your-username>"
-        )
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
+    else:
+        if not user.bgg_username:
+            await update.message.reply_text(
+                "No BGG username found! Please attach a BGG User using the command /add_bgg_username <your-username>"
+            )
+            await update.message.set_reaction("👎")
 
-        raise KeyError("No BGG username found! Please attach a BGG User")
+            raise KeyError("No BGG username found! Please attach a BGG User")
 
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
-    bgg_collection = bgg_client.collection(user_name=user.bgg_username)
+        bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
+        bgg_collection = bgg_client.collection(user_name=user.bgg_username)
 
-    for item in bgg_collection.items:
-        # todo: refactor all code like this into method of the class, "find_and_update"
-        game_id = item.id
-        game_name = item.name
-        game, _ = Game.get_or_create(game_id=game_id)
-        game.game_name = game_name
-        game.save()
-        user_collection, _ = UserCollection.get_or_create(
-            user=user,
-            game=game
-        )
-        status = get_status_from_bgg_game(item)
-        if not status:
-            continue
-        user_collection.status = status
-        user_collection.save()
+        for item in bgg_collection.items:
+            # todo: refactor all code like this into method of the class, "find_and_update"
+            game_id = item.id
+            game_name = item.name
+            game, _ = Game.get_or_create(game_id=game_id)
+            game.game_name = game_name
+            game.save()
+            user_collection, _ = UserCollection.get_or_create(
+                user=user,
+                game=game
+            )
+            status = get_status_from_bgg_game(item)
+            if not status:
+                continue
+            user_collection.status = status
+            user_collection.save()
 
-        post, _ = Post.get_or_create(
-            post_type=user_collection.status,
-            user=user,
-            game=game
-        )
-        post.active = True
-        post.save()
-    await update.message.set_reaction("👍")
+            post = Post.get_or_none(
+                post_type=user_collection.status,
+                user=user,
+                game=game,
+                active=True
+            )
+            if not post:
+                log.info(f'inserting a {status} post for {game.game_name} into the table for user {user.first_name}')
+                post = Post(
+                    post_type=user_collection.status,
+                    user=user,
+                    game=game,
+                    active=True,
+                    text="auto-generated from bgg-collection"
+                )
+                post.save()
+        await update.message.set_reaction("👍")
 
 async def match_me(update, _):
     """
@@ -283,8 +276,8 @@ async def match_me(update, _):
     :param _:
     :return:
     """
-    # if update.effective_chat.type != "private":
-    #     await update.message.set_reaction("👎")
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
     user = create_user_from_message(update.message)
     posts = read_posts(user_id=user.telegram_userid)
 
