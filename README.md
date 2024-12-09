@@ -1,3 +1,10 @@
+<!-- TOC -->
+* [meeple-matchmaker](#meeple-matchmaker)
+  * [How does it work?](#how-does-it-work)
+  * [Example:](#example)
+  * [Supported Commands](#supported-commands)
+<!-- TOC -->
+
 # meeple-matchmaker
 A telegram bot for meeple market which matches 
 "in-search-of" and sale posts and notifies users
@@ -46,6 +53,25 @@ The bot will reply to Tanuj's message and tag Deepak and Chaitanya
 ```
 @Deepak @Chaitanya
 ```
+
+## Supported Commands
+
+
+| Command                    | Description                                           | Private / Group Support     | Notes                                                                                      |
+|----------------------------|-------------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------|
+| #lookingfor game_name      | Adds game_name to your search list                    | Both Private and Group Chat | Supported tags are #lookingfor, #looking, #iso                                             |
+| #sale game_name            | Adds game_name to your sale list                      | Both Private and Group Chat | Supported tags are #sale, #seekinginterest, #selling, #auction                             |
+| #sold game_name            | Removes game_name from your sale list                 | Both Private and Group Chat |                                                                                            |
+| #found game_name           | Removes game_name from your search list               | Both Private and Group Chat |                                                                                            |
+| /start                     | Gives a detailed message explaining what the bot does | Private Only                |                                                                                            |
+| /list_all_sales            | Lists all active sales                                | Private Only                |                                                                                            |
+| /list_all_searches         | List all active searches                              | Private Only                |                                                                                            |
+| /list_my_posts             | List all your active posts - both sales and searches  | Private Only                |                                                                                            |
+| /match_me                  | Finds matches for your sales and searches             | Private Only                |                                                                                            |
+| /add_bgg_username          | Updates your user profile to add a bgg username       | Private Only                |                                                                                            |
+| /import_my_bgg_collection  | Imports your collection                               | Private Only                | Only imports wishlist / want-to-buy as searches and<br/>  for-trade as sales not all games |
+| /disable                   | Marks all your posts as inactive                      | Private Only                |                                                                                            |
+
 
 Have questions?
 [Check out this FAQ](faq.md)
