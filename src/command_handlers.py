@@ -239,14 +239,14 @@ async def import_my_bgg_collection(update, _):
             game, _ = Game.get_or_create(game_id=game_id)
             game.game_name = game_name
             game.save()
-            user_collection, _ = UserCollection.get_or_create(
-                user=user,
-                game=game
-            )
             status = get_status_from_bgg_game(item)
             if not status:
                 continue
-            user_collection.status = status
+            user_collection, _ = UserCollection.get_or_create(
+                user=user,
+                game=game,
+                status=status
+            )
             user_collection.save()
 
             post = Post.get_or_none(
