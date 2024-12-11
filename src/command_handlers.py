@@ -284,12 +284,14 @@ async def match_me(update, _):
     user_searches = [p for p in posts if p.post_type == 'search']
     user_sales = [p for p in posts if p.post_type == 'sale']
 
-    if not user_sales and not user_searches:
-        return
-    matched_searches = read_posts(game_id=[search.game.game_id for search in user_searches],
-                                  post_type='sale')
-    matched_sales = read_posts(game_id=[sale.game.game_id for sale in user_sales],
-                               post_type='search')
+    matched_searches = []
+    matched_sales = []
+    if user_searches:
+        matched_searches = read_posts(game_id=[search.game.game_id for search in user_searches],
+                                      post_type='sale')
+    if user_sales:
+        matched_sales = read_posts(game_id=[sale.game.game_id for sale in user_sales],
+                                   post_type='search')
 
     reply_sales = format_list_of_posts(matched_searches)
     reply_searches = format_list_of_posts(matched_sales)
