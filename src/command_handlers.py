@@ -108,7 +108,7 @@ async def start_command(update, _):
     or [Github issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
     **Do not post in the main channel.**
     """
-    if update.effective_chat.type == ChatType.GROUP:
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
         await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
@@ -121,7 +121,7 @@ async def disable_command(update, _):
     :return:
     """
     log.info("/disable")
-    if update.effective_chat.type == ChatType.GROUP:
+    if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
         user_id = update.message.from_user.id
