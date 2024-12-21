@@ -32,9 +32,11 @@ def read_posts(
         clauses.append((Post.game.in_(games)))
 
     data = Post\
-        .select(Post.post_type, Post.user, Post.game, Post.active)\
-        .where(reduce(operator.and_, clauses))\
-        .order_by(Post.post_type, -Post.game, Post.user)\
+        .select(Post.post_type, Post.user, Post.game, Post.active, Game.game_id, Game.game_name, User.first_name, User.telegram_userid)\
+        .join(Game, on=(Post.game == Game.id))\
+        .join(User, on=(Post.user == User.id)) \
+        .where(reduce(operator.and_, clauses)) \
+        .order_by(Post.post_type, Game.game_name, User.first_name) \
         .distinct()
     return data.execute()
 
