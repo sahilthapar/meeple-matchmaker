@@ -34,6 +34,8 @@ def format_post(post: Post, bgg_client: BGGClient) -> str:
             log.error("game_id: %s", game_id)
             log.error("BGGAPIError")
 
+    # remove _ from game_name
+    game_name = game_name.replace('_', '')
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
 
 def format_list_of_posts(posts: Iterable[Post]) -> str:
