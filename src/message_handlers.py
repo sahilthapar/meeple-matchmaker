@@ -37,7 +37,7 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
         elif post.post_type == 'sold' or post.post_type == 'found':
-            if update.effective_chat.type != 'private':
+            if post.post_type == 'found' and update.effective_chat.type != 'private':
                 await update.message.set_reaction("👎")
                 return
             disable_post(post)
