@@ -49,7 +49,6 @@ RUN chown -R appuser:appuser /app
 COPY . .
 
 # Copy the seed database to a separate location in the image
-RUN echo 'why'
 COPY database/meeple-matchmaker.db /app/seed/meeple-matchmaker.db
 
 # Copy the entrypoint script
