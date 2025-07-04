@@ -12,11 +12,6 @@ class TestCommandHandlers:
     def bgg_client(self):
         return BGGClient()
 
-    @pytest.fixture(name="database")
-    def database(self):
-        db.init(":memory:")
-        return db
-
     @pytest.mark.parametrize(
         argnames="posts,expected_reply",
         argvalues=[

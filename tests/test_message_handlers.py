@@ -10,11 +10,6 @@ pytest_plugins = ('pytest_asyncio',)
 
 class TestMessageHandlers:
 
-    @pytest.fixture(name="database")
-    def database(self):
-        db.init(":memory:")
-        return db
-
     @pytest.fixture(name="mock_update")
     def mock_update(self, mocker):
         update = mocker.patch("telegram.Update")
