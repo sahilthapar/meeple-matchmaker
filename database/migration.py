@@ -2,9 +2,8 @@
 
 
 # Step 1: Create a temporary LegacyPost model
-from peewee import Model, SqliteDatabase, TextField, IntegerField, BooleanField, CompositeKey
+from peewee import Model, TextField, IntegerField, BooleanField, CompositeKey
 from src.models import Post, Game, User, db
-from playhouse.shortcuts import model_to_dict
 
 db.init("database/meeple-matchmaker.db")
 

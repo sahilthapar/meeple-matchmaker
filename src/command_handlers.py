@@ -8,7 +8,6 @@ from itertools import chain
 
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from boardgamegeek.objects.games import CollectionBoardGame
-from telegram.constants import ChatType
 
 
 from src.database import disable_posts, read_posts
@@ -29,7 +28,7 @@ def format_post(post: Post, bgg_client: BGGClient) -> str:
     if not game_name:
         log.warning("Game name not found in database, searching BGG")
         try:
-            game = bgg_client.game(game_id=game_id)
+            _ = bgg_client.game(game_id=game_id)
         except BGGApiError:
             log.error("game_id: %s", game_id)
             log.error("BGGAPIError")
