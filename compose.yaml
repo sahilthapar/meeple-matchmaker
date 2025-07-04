@@ -14,9 +14,7 @@ services:
     ports:
       - 8081:8081
     volumes:
-      - type: bind
-        source: database/meeple-matchmaker.db
-        target: /home/app/meeple-matchmaker.db # needs to be absolute
+      - sqlite-data:/app/database
 
 
 # The commented out section below is an example of how to define a PostgreSQL
@@ -51,4 +49,7 @@ services:
 # secrets:
 #   db-password:
 #     file: db/password.txt
+
+volumes:
+  sqlite-data:
 
