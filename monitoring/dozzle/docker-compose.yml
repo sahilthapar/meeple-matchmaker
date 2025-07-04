@@ -1,0 +1,10 @@
+services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /run/user/1000/docker.sock:/var/run/docker.sock
+    ports:
+      - 8084:8080
+    environment:
+      - DEBUG=15s
