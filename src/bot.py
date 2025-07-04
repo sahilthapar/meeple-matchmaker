@@ -12,6 +12,7 @@ from src.models import db
 
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("meeple-matchmaker")
 
 
@@ -35,4 +36,4 @@ if __name__ == "__main__":
         app.add_handler(MessageHandler(filters=None, callback=message_handler))
 
         log.info("Bot is ready!")
-        app.run_polling()
+        app.run_polling(10)
