@@ -48,8 +48,15 @@ RUN chown -R appuser:appuser /app
 # Copy the source code into the container.
 COPY . .
 
+# Copy the seed database to a separate location in the image
+RUN echo 'why'
+COPY database/meeple-matchmaker.db /app/seed/meeple-matchmaker.db
 
-RUN chmod a+rw /app/database /app/database/*
+# Copy the entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+RUN chmod a+rw /app/database /app/database/* || true
 
 
 # Switch to the non-privileged user to run the application.
@@ -61,3 +68,5 @@ EXPOSE 8081
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
 CMD make start_bot
+
+ENTRYPOINT ["/app/entrypoint.sh"]
