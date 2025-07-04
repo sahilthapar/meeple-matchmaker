@@ -158,10 +158,12 @@ class TestMessageHandlers:
                     post = Post.get(user=user, game=game, post_type=post_type)
                     assert post.active is False
         if any(msg.text.lower().startswith("#found") for msg in new_messages):
-            # For 'found', the user's search post for the game should be inactive
             for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
                 if post_type == "search":
                     user = User.get(telegram_userid=user_id)
                     game = Game.get(game_id=game_id)
                     post = Post.get(user=user, game=game, post_type=post_type)
-                    assert post.active is False
+                    if chat_type == "private":
+                        assert post.active is False
+                    else:
+                        assert post.active is True
