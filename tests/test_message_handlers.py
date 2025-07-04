@@ -45,7 +45,7 @@ class TestMessageHandlers:
         return post
 
     @pytest.mark.parametrize(
-        argnames="init_posts,new_messages,expected_replies",
+        argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction",
         argvalues=[
             # simple scenario with a two sale posts followed by a search post
             (
@@ -58,7 +58,9 @@ class TestMessageHandlers:
                 ],
                 [
                     "[alpha](tg://user?id=101), [beta](tg://user?id=102)"
-                ]
+                ],
+                "private",
+                "👍"
             ),
             # simple scenario with a two search posts followed by a sale post
             (
@@ -71,27 +73,45 @@ class TestMessageHandlers:
                 ],
                 [
                     "[alpha](tg://user?id=101), [beta](tg://user?id=102)"
-                ]
+                ],
+                "private",
+                "👍"
             ),
             # simple scenario with a sale post followed by a sold post
             (
-                    [
-                        ('sale', 167791, '#seekinginterest terraforming mars', '101', 'alpha', 1, 'Terraforming Mars'),
-                    ],
-                    [
-                        SimpleNamespace(text="#sold terraforming mars", id=101, first_name="Alpha")
-                    ],
-                    ['']
+                [
+                    ('sale', 167791, '#seekinginterest terraforming mars', '101', 'alpha', 1, 'Terraforming Mars'),
+                ],
+                [
+                    SimpleNamespace(text="#sold terraforming mars", id=101, first_name="Alpha")
+                ],
+                [''],
+                "private",
+                "👍"
             ),
-            # simple scenario with a search post followed by a found post
+            # simple scenario with a search post followed by a found post (private chat)
             (
-                    [
-                        ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars')
-                    ],
-                    [
-                        SimpleNamespace(text="#found terraforming mars", id=101, first_name="Alpha")
-                    ],
-                    ['']
+                [
+                    ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars')
+                ],
+                [
+                    SimpleNamespace(text="#found terraforming mars", id=101, first_name="Alpha")
+                ],
+                [''],
+                "private",
+                "👍"
+            ),
+            # simple scenario with a search post followed by a found post (group chat)
+            (
+                [
+                    ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars')
+                ],
+                [
+                    SimpleNamespace(text="#found terraforming mars", id=101, first_name="Alpha")
+                ],
+                [''],
+                "group",
+                "👎"
             ),
             # todo: scenario with disable notifications in between
         ],
@@ -99,12 +119,12 @@ class TestMessageHandlers:
             "scenario1-simple-sales-followed-by-a-search",
             "scenario2-simple-searches-followed-by-a-sale",
             "scenario3-simple-sale-followed-by-a-sold",
-            "scenario4-simple-search-followed-by-a-found",
-
+            "scenario4-simple-search-followed-by-a-found-private",
+            "scenario5-simple-search-followed-by-a-found-group",
         ]
     )
     @pytest.mark.asyncio
-    async def test_scenario(self, database, init_posts, mock_update, mock_context, new_messages, expected_replies):
+    async def test_scenario(self, database, init_posts, mock_update, mock_context, new_messages, expected_replies, chat_type, expected_reaction):
         init_tables(database)
         for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
             self.initialize_post(
@@ -119,8 +139,29 @@ class TestMessageHandlers:
             mock_update.message.from_user.id = msg.id
             mock_update.message.from_user.first_name = msg.first_name
 
+            # Set chat type for 'found' scenario
+            if msg.text.lower().startswith("#found"):
+                mock_update.effective_chat.type = chat_type
+
             await message_handler(mock_update, mock_context)
-            # todo: for sold and found scenarios perhaps also assert that the right db methods are being called?
             if reply:
                 mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
-            mock_update.message.set_reaction.assert_called_once_with("👍")
+            mock_update.message.set_reaction.assert_called_once_with(expected_reaction)
+
+        # Additional assertions for 'sold' and 'found' scenarios
+        if any(msg.text.lower().startswith("#sold") for msg in new_messages):
+            # For 'sold', the user's sale post for the game should be inactive
+            for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
+                if post_type == "sale":
+                    user = User.get(telegram_userid=user_id)
+                    game = Game.get(game_id=game_id)
+                    post = Post.get(user=user, game=game, post_type=post_type)
+                    assert post.active is False
+        if any(msg.text.lower().startswith("#found") for msg in new_messages):
+            # For 'found', the user's search post for the game should be inactive
+            for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
+                if post_type == "search":
+                    user = User.get(telegram_userid=user_id)
+                    game = Game.get(game_id=game_id)
+                    post = Post.get(user=user, game=game, post_type=post_type)
+                    assert post.active is False
