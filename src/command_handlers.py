@@ -75,41 +75,24 @@ async def start_command(update, _):
     :return:
     """
     reply = """
-    
-    Hi, this is the meeple matchmaker bot.
-    
-    I'm here to help match buyers and sellers in the Meeple Market Telegram Channel
-        
-    *How does it work?*
-    
-    The bot uses two things from a posted message in the group
-      
-    1. *a hash tag*, supported tags are:
-    
-      - to search for a game: *#lookingfor, #iso, #looking*
-      
-      - to sell a game: *#seekinginterest, #auction, #sale, #sell, #selling*
-      
-    2. *a game name*, the more accurately your name matches the BGG name, the better your chances of success
-    
-    This game name is then searched against BGG, and converted to a game id, if a successful match is found.
-    
-    If the bot was able to find a successful match, it will react to the message with a 👍
-    
-    *Important: Keep the first line of your message limited to only these two things a hashtag and a game name (as seen on BGG).
-    All other details like condition, price, location should be present only in a new line*
-    
-    *For more details and a complete list of supported features and commands *
-    [Check out this README](https://github.com/sahilthapar/meeple-matchmaker/blob/main/README.md)
-    
-    *Have questions?*
-    [Check out this FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
-    
-    *Have suggestions?*
-    Use the meeple-market chit chat group
-    or [Github issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
-    **Do not post in the main channel.**
-    """
+Hi! I'm Meeple Matchmaker Bot.
+
+I help match buyers and sellers in the Meeple Market Telegram channel.
+
+*How to use:*
+- Start your message with a hashtag and the game name (as listed on BGG).
+  - To buy: #lookingfor, #iso, #looking
+  - To sell: #sale, #sell, #selling, #auction, #seekinginterest
+- The bot will check the game name on BGG and react with 👍 if it finds a match.
+
+*Tip:*
+Keep the first line to just the hashtag and game name. Add details (condition, price, location) on new lines.
+
+[Full guide & features](https://github.com/sahilthapar/meeple-matchmaker/blob/main/README.md)
+[FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
+Suggestions? Use the chit chat group or [GitHub issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
+**Don't post suggestions in the main channel.**
+"""
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
