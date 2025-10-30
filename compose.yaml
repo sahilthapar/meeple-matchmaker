@@ -1,5 +1,7 @@
 services:
   server:
+    environment:
+      BGG_BEARER: ${BGG_BEARER}
     build:
       context: .
     ports:

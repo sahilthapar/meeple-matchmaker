@@ -1,3 +1,5 @@
+import os
+
 from telegram import Message
 from typing import Optional, Tuple
 from logging import getLogger
@@ -108,7 +110,7 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     # parse game info
     game_name = parse_game_name(message_without_tag)
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7))
+    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
     game = get_game_details(game_name, bgg_client)
     if not game:
         log.warning("Game not found")

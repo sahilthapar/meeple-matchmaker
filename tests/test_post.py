@@ -1,4 +1,5 @@
 import pytest
+import os
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
 from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
                               get_game_details, get_message_contents, get_message_without_command)
@@ -10,7 +11,7 @@ class TestMessageParsing:
 
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
-        return BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
+        return BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
 
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):

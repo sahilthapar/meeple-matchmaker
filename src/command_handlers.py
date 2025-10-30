@@ -1,6 +1,7 @@
 """Handler for telegram bot commands"""
 import textwrap
 import logging
+import os
 from typing import Iterable
 from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_message_without_command
@@ -43,7 +44,7 @@ def format_list_of_posts(posts: Iterable[Post]) -> str:
     :param posts:
     :return:
     """
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
+    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
     active_sales = [x for x in posts if x.post_type == 'sale']
     active_searches = [x for x in posts if x.post_type == 'search']
 
@@ -213,7 +214,7 @@ async def import_my_bgg_collection(update, _):
 
             raise KeyError("No BGG username found! Please attach a BGG User")
 
-        bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7))
+        bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
         bgg_collection = bgg_client.collection(user_name=user.bgg_username)
 
         for item in bgg_collection.items:
