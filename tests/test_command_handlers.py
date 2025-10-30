@@ -1,5 +1,6 @@
 import pytest
 import textwrap
+import os
 from boardgamegeek import BGGClient
 
 from src.command_handlers import format_list_of_posts, format_post
@@ -10,12 +11,7 @@ from src.database import init_tables
 class TestCommandHandlers:
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
-        return BGGClient()
-
-    @pytest.fixture(name="database")
-    def database(self):
-        db.init(":memory:")
-        return db
+        return BGGClient(access_token=os.getenv('BGG_BEARER'))
 
     @pytest.mark.parametrize(
         argnames="posts,expected_reply",

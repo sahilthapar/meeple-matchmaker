@@ -9,14 +9,9 @@ class TestDatabase:
     def _post_model_to_tuple(post: Post):
         return post.post_type, post.game.game_id, post.user.first_name, post.active, post.game.game_name
 
-    @pytest.fixture(name="database")
-    def database(self):
-        db.init(":memory:")
-        return db
-
     @pytest.fixture(name="sample_posts")
-    def sample_posts(self, database):
-        init_tables(database)
+    def sample_posts(self):
+        init_tables(db)
         jacob = User(telegram_userid=101, first_name='Jacob')
         henry = User(telegram_userid=102, first_name='Henry')
         marcus = User(telegram_userid=103, first_name='Marcus')
@@ -40,9 +35,9 @@ class TestDatabase:
         Post(post_type='search', text='#lookingfor monopoly', active=True, user=jacob, game=monopoly).save()
         Post(post_type='search', text='#lookingfor wingspan', active=False, user=cristiano, game=wingspan).save()
 
-    def test_init_tables(self, database):
-        init_tables(database)
-        data = database.get_tables()
+    def test_init_tables(self):
+        init_tables(db)
+        data = db.get_tables()
 
         assert data == ['game', 'user', 'user_post']
 
