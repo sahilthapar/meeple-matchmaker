@@ -5,7 +5,7 @@ Just use the command `/list_all_sales`
 
 ### How can I find all games people are currently searching?
 You can do this by sending DM (direct message) to the bot
-Just use the command `/list_all_sales`
+Just use the command `/list_all_searches`
 **Do not use this command in the group chat, it will not work.**
 
 ### How do I stop the notifications?
@@ -31,7 +31,7 @@ Matchmaker bot support adding the following games from your collection
 
 Follow these steps in PRIVATE CHAT / DM with the meeple-matchmaker bot
 1. Attach a BGG Username to your account `/add_bgg_username your_username`
-2. Import your collection `/import_my_collection`
+2. Import your collection `/import_my_bgg_collection`
 
 Your collection is now added to the matchmaker bot.
 
