@@ -73,6 +73,53 @@ The bot will reply to Tanuj's message and tag Deepak and Chaitanya
 | /disable                   | Marks all your posts as inactive                      | Private Only                |                                                                                            |
 
 
+## Local Development
+
+### Prerequisites
+
+- Python 3.11+
+- A Telegram bot token (create one via [@BotFather](https://t.me/BotFather) — use a personal test bot, not the production one)
+
+### Setup
+
+```bash
+# 1. Clone and install dependencies
+pip install -r requirements.txt
+
+# 2. Configure the bot token
+cp auth.example.json auth.json
+# Edit auth.json and replace "your-token-here" with your test bot token
+
+# 3. (Optional) Set up BGG API auth to avoid rate limits
+cp .env.example .env
+# Edit .env and add your BGG bearer token
+```
+
+### Running checks
+
+```bash
+make test        # run tests (uses in-memory SQLite, no bot token needed)
+make lint        # ruff linter
+make typecheck   # mypy type checker
+make check       # lint + typecheck + test
+```
+
+Tests don't require a real bot token or BGG API access — they use mocks and an in-memory database.
+
+### Project structure
+
+```
+src/
+  bot.py               # entry point
+  models.py            # ORM models (User, Game, Post, UserCollection)
+  database.py          # DB query helpers
+  telegrampost.py      # message parsing + BGG lookup
+  message_handlers.py  # routes incoming Telegram messages
+  command_handlers.py  # slash command implementations
+  bgg.py               # BGG API client factory
+tests/                 # mirrors src/ structure
+```
+
 Have questions?
 [Check out this FAQ](faq.md)
 
