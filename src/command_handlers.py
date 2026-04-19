@@ -296,7 +296,12 @@ async def disable_user(update, _):
         await update.message.set_reaction("👎")
         return
 
-    if update.message.from_user.id != 995823071:
+    admin_ids = [
+        995823071, # Sahil Thapar
+        6946013582, # Mica
+        635786234, # Anshul J
+    ]
+    if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")
         return
 
