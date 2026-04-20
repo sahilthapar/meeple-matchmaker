@@ -5,7 +5,7 @@ from typing import Optional
 from telegram.ext import ContextTypes
 from telegram import Update
 
-from src.telegrampost import parse_message
+from src.telegrampost import parse_message, find_post_tag, is_post_tag_banned
 from src.database import read_posts, disable_posts
 from src.models import Post
 
@@ -28,6 +28,21 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     :return:
     """
     log.info("Attempting to parse message")
+    
+    # Check if message is a valid command before trying to hit the API
+    post_tag = find_post_tag(update.message)
+    log.info("Found post tag: %s", post_tag)
+
+    if not post_tag:
+        return
+    
+    should_ignore_post = is_post_tag_banned(post_tag, update.effective_chat.type)
+    log.info("For post tag: %s and chat_type %s, post ignored = %s", post_tag, update.effective_chat.type,should_ignore_post)
+
+    if should_ignore_post:
+        await update.message.set_reaction("👎")
+        return
+
     post, game, user = parse_message(update.message) if update.message else (None, None, None)
     if not post or not game or not user:
         return
@@ -37,9 +52,6 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
             if reply:
                 await update.message.reply_text(reply, parse_mode='Markdown')
         elif post.post_type == 'sold' or post.post_type == 'found':
-            if post.post_type == 'found' and update.effective_chat.type != 'private':
-                await update.message.set_reaction("👎")
-                return
             disable_post(post)
 
     if post.game:

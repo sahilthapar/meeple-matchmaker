@@ -1,10 +1,10 @@
 import os
+import re
+from logging import getLogger
+from typing import Optional, Tuple
 
 from telegram import Message
-from typing import Optional, Tuple
-from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
-import re
 
 from src.models import Game, User, Post
 
@@ -23,6 +23,16 @@ TYPE_LOOKUP = {
     "#sold": "sold",
     "#found": "found",
 }
+
+TAGS_BANNED_IN_DM = [
+    "#seekinginterest",
+    "#sell"
+]
+
+TAGS_BANNED_IN_GROUP = [
+    "#seekinginterest",
+    "#found"
+]
 
 def get_message_contents(message: Message) -> str:
     text = message.text or message.caption
@@ -129,3 +139,19 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     return post, game, user
 
+def find_post_tag(message: Message) -> Optional[str]:
+    """
+    Finds the post tag from a message (eg: #sold, #found)
+    """
+    message_text = get_message_contents(message)
+    tag = parse_tag(message_text)
+    return tag
+
+
+def is_post_tag_banned(post_tag:str, chat_type:str) -> bool:
+    """
+    True if a post tag is not allowed in its specific context (DM or group)
+    """
+    banned_in_dm = True if post_tag in TAGS_BANNED_IN_DM and chat_type=="private" else False
+    banned_in_group = True if post_tag in TAGS_BANNED_IN_GROUP and chat_type!="private" else False
+    return banned_in_dm or banned_in_group
