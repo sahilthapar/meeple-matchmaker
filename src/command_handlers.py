@@ -303,7 +303,6 @@ async def disable_user(update, _):
         995823071, # Sahil Thapar
         6946013582, # Mica
         635786234, # Anshul J,
-        1294547458
     ]
     if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")
