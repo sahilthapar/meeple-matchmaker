@@ -27,22 +27,19 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     :param _:
     :return:
     """
-    log.info("Attempting to parse message")
-    
     # Check if message is a valid command before trying to hit the API
     post_tag = find_post_tag(update.message)
-    log.info("Found post tag: %s", post_tag)
 
     if not post_tag:
         return
-    
+
     should_ignore_post = is_post_tag_banned(post_tag, update.effective_chat.type)
-    log.info("For post tag: %s and chat_type %s, post ignored = %s", post_tag, update.effective_chat.type,should_ignore_post)
 
     if should_ignore_post:
         await update.message.set_reaction("👎")
         return
 
+    log.info("Attempting to parse message")
     post, game, user = parse_message(update.message) if update.message else (None, None, None)
     if not post or not game or not user:
         return

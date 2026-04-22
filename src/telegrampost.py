@@ -53,7 +53,7 @@ def parse_game_name(message: str) -> str:
 
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     try:
-        log.info(f"Trying exact match for game: {game_name}")
+        log.info("Trying exact match for game: %s", game_name)
         # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
