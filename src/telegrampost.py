@@ -42,7 +42,7 @@ def get_message_contents(message: Message) -> str:
 def parse_tag(message: str) -> str:
     """Extracts the tag used in the message"""
     tag = re.search(
-        pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#seekinginterest|^#sell|^#auction|^#sold|^#found",
+        pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#sell|^#auction|^#sold|^#found",
         string=message
     )
     if not tag:
