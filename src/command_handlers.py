@@ -2,15 +2,12 @@
 import textwrap
 import logging
 import os
-from typing import Iterable
-from src.models import Post, UserCollection, Game
-from src.telegrampost import create_user_from_message, get_message_without_command
 from itertools import chain
-
+from typing import Iterable, Generator
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from boardgamegeek.objects.games import CollectionBoardGame
-
-
+from src.models import Post, UserCollection, Game
+from src.telegrampost import create_user_from_message, get_message_without_command
 from src.database import disable_posts, read_posts
 
 log = logging.getLogger("meeple-matchmaker")
@@ -38,7 +35,7 @@ def format_post(post: Post, bgg_client: BGGClient) -> str:
     game_name = game_name.replace('_', '')
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
 
-def format_list_of_posts(posts: Iterable[Post]) -> str:
+def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
     """
     Wrapper method to format a list of message posts for replying on telegram
     :param posts:
@@ -162,6 +159,9 @@ async def list_my_active_posts(update, _):
             await update.message.reply_text(part, parse_mode="Markdown")
 
 async def add_bgg_username(update, _):
+    """
+    Allows a user to save their bgg username in the bots DB so they can import their collection later
+    """
     log.info("/add_bgg_username")
     user = create_user_from_message(update.message)
     if update.effective_chat.type != "private":
@@ -183,6 +183,9 @@ async def add_bgg_username(update, _):
 
 
 def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
+    """
+    Maps a BGG game status to a meeple-matchmaker post tag
+    """
     if game.for_trade:
         return 'sale'
 
@@ -241,7 +244,7 @@ async def import_my_bgg_collection(update, _):
                 active=True
             )
             if not post:
-                log.info(f'inserting a {status} post for {game.game_name} into the table for user {user.first_name}')
+                log.info('inserting a %s post for %s into the table for user %s',status, game.game_name, user.first_name)
                 post = Post(
                     post_type=user_collection.status,
                     user=user,
@@ -299,7 +302,8 @@ async def disable_user(update, _):
     admin_ids = [
         995823071, # Sahil Thapar
         6946013582, # Mica
-        635786234, # Anshul J
+        635786234, # Anshul J,
+        1294547458
     ]
     if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")

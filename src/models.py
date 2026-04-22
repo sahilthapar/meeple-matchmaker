@@ -1,8 +1,13 @@
+"""Module providing ORM models for the entities used in meeple-matchmaker"""
+import datetime
 from peewee import SqliteDatabase, Model
 from peewee import AutoField, IntegerField, TextField, BooleanField, ForeignKeyField, DateTimeField
-import datetime
 
-db = SqliteDatabase(None)
+db = SqliteDatabase(None, pragmas={
+    'journal_mode': 'wal',  # Allow readers while writer active.
+    'cache_size': -64000,  # 64 MB page cache.
+    'foreign_keys': 1,  # Enforce FK constraints.
+})
 
 class User(Model):
     """

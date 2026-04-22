@@ -1,3 +1,5 @@
+"""Module providing miscellaneous processing methods related to telegram posts"""
+
 import os
 import re
 from logging import getLogger
@@ -35,10 +37,12 @@ TAGS_BANNED_IN_GROUP = [
 ]
 
 def get_message_contents(message: Message) -> str:
+    """Extract the text or caption from a message"""
     text = message.text or message.caption
     return text.lower() if text else ""
 
 def parse_tag(message: str) -> str:
+    """Extracts the tag used in the message"""
     tag = re.search(
         pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#seekinginterest|^#sell|^#auction|^#sold|^#found",
         string=message
@@ -48,10 +52,15 @@ def parse_tag(message: str) -> str:
     return tag.group()
 
 def parse_game_name(message: str) -> str:
+    """Performs string replacement (if required) and returns the game name as typed by the user"""
     first_line = message.strip().split("\n")[0]
     return first_line.replace("game name:", "").replace("game:", "").strip()
 
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
+    """
+    Uses the BGG Client to fetch a game based on its name. 
+    If found, checks the DB for an existing entry, otherwise creates the game and returns the model.
+    """
     try:
         log.info("Trying exact match for game: %s", game_name)
         # todo: use .search instead of .game
@@ -94,6 +103,7 @@ def create_user_from_message(message: Message) -> User:
     return user
 
 def get_message_without_command(message: Message) -> str:
+    """Extracts the message text by deleting the first word (usually a commmand)"""
     text = get_message_contents(message)
     return text.split(" ")[1]
 
