@@ -19,21 +19,19 @@ TYPE_LOOKUP = {
     "#looking": "search",
     "#sale": "sale",
     "#selling": "sale",
-    "#seekinginterest": "sale",
+    # "#seekinginterest": "sale",
     "#sell": "sale",
     "#auction": "sale",
     "#sold": "sold",
     "#found": "found",
 }
 
-TAGS_BANNED_IN_DM = [
-    "#seekinginterest",
-    "#sell"
+POST_TYPES_BANNED_IN_DM = [
+    "sale"
 ]
 
-TAGS_BANNED_IN_GROUP = [
-    "#seekinginterest",
-    "#found"
+POST_TYPES_BANNED_IN_GROUP = [
+    "found"
 ]
 
 def get_message_contents(message: Message) -> str:
@@ -149,19 +147,20 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     return post, game, user
 
-def find_post_tag(message: Message) -> Optional[str]:
+def find_post_type(message: Message) -> Optional[str]:
     """
-    Finds the post tag from a message (eg: #sold, #found)
+    Finds the post type from a message (eg: sale, found)
     """
     message_text = get_message_contents(message)
     tag = parse_tag(message_text)
-    return tag
+    post_type = TYPE_LOOKUP.get(tag, None)
+    return post_type
 
 
-def is_post_tag_banned(post_tag:str, chat_type:str) -> bool:
+def is_post_type_banned(post_type:str, chat_type:str) -> bool:
     """
-    True if a post tag is not allowed in its specific context (DM or group)
+    True if a post type is not allowed in its specific context (DM or group)
     """
-    banned_in_dm = True if post_tag in TAGS_BANNED_IN_DM and chat_type=="private" else False
-    banned_in_group = True if post_tag in TAGS_BANNED_IN_GROUP and chat_type!="private" else False
+    banned_in_dm = post_type in POST_TYPES_BANNED_IN_DM and chat_type=="private"
+    banned_in_group = post_type in POST_TYPES_BANNED_IN_GROUP and chat_type!="private"
     return banned_in_dm or banned_in_group

@@ -5,7 +5,7 @@ from typing import Optional
 from telegram.ext import ContextTypes
 from telegram import Update
 
-from src.telegrampost import parse_message, find_post_tag, is_post_tag_banned
+from src.telegrampost import parse_message, find_post_type, is_post_type_banned
 from src.database import read_posts, disable_posts
 from src.models import Post
 
@@ -28,12 +28,12 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     :return:
     """
     # Check if message is a valid command before trying to hit the API
-    post_tag = find_post_tag(update.message)
+    post_type = find_post_type(update.message)
 
-    if not post_tag:
+    if not post_type:
         return
 
-    should_ignore_post = is_post_tag_banned(post_tag, update.effective_chat.type)
+    should_ignore_post = is_post_type_banned(post_type, update.effective_chat.type)
 
     if should_ignore_post:
         await update.message.set_reaction("👎")
