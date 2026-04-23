@@ -19,7 +19,6 @@ TYPE_LOOKUP = {
     "#looking": "search",
     "#sale": "sale",
     "#selling": "sale",
-    # "#seekinginterest": "sale",
     "#sell": "sale",
     "#auction": "sale",
     "#sold": "sold",

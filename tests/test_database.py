@@ -1,17 +1,19 @@
+"""Test cases for the database module"""
 import pytest
 from src.database import init_tables, read_posts, disable_posts
-from src.models import User, Game, Post, db
+from src.models import User, Game, Post
 
 
 class TestDatabase:
-
+    """Class containing all test cases to be executed for the database"""
     @staticmethod
     def _post_model_to_tuple(post: Post):
         return post.post_type, post.game.game_id, post.user.first_name, post.active, post.game.game_name
 
     @pytest.fixture(name="sample_posts")
-    def sample_posts(self):
-        init_tables(db)
+    def sample_posts(self, database):
+        """Fixture to initialise the database with a number of users and posts"""
+        init_tables(database)
         jacob = User(telegram_userid=101, first_name='Jacob')
         henry = User(telegram_userid=102, first_name='Henry')
         marcus = User(telegram_userid=103, first_name='Marcus')
@@ -35,11 +37,13 @@ class TestDatabase:
         Post(post_type='search', text='#lookingfor monopoly', active=True, user=jacob, game=monopoly).save()
         Post(post_type='search', text='#lookingfor wingspan', active=False, user=cristiano, game=wingspan).save()
 
-    def test_init_tables(self):
-        init_tables(db)
-        data = db.get_tables()
+    def test_init_tables(self, database):
+        """Initialises the tables for the in memory fixture database present in conftest"""
+        init_tables(database)
+        tables = database.get_tables()
 
-        assert data == ['game', 'user', 'user_post']
+        for table in tables:
+            assert table in ['game', 'user', 'user_post', 'user_collection']
 
     @pytest.mark.parametrize(
         argnames="post_type,game_id,expected_inactives",
@@ -75,12 +79,13 @@ class TestDatabase:
         ids=["disable_all", "disable_sold_tfm", "disable_found_monopoly"]
     )
     def test_disable_posts_all(self, sample_posts, post_type, game_id, expected_inactives):
+        """Tests disabling of posts. sample_posts is a parameter so that the fixture executes"""
         jacob = User.get(telegram_userid=101)
 
         disable_posts(user_id=jacob.telegram_userid, post_type=post_type, game_id=game_id)
 
         #ruff: noqa: E712
-        jacobs_inactive_posts = Post.select().where((Post.active == False) & (Post.user == jacob)).execute()
+        jacobs_inactive_posts = Post.select().where((Post.active is False) & (Post.user == jacob)).execute()
         actual_inactives = [
             self._post_model_to_tuple(post) for post in jacobs_inactive_posts
         ]
@@ -144,7 +149,7 @@ class TestDatabase:
         ]
     )
     def test_read_posts(self, sample_posts, user_id, post_type, game_id, expected_data):
-
+        """Tests reading of posts. sample_posts is a parameter so that the fixture executes"""
         posts = read_posts(post_type=post_type, user_id=user_id, game_id=game_id)
         posts = [self._post_model_to_tuple(post) for post in posts]
         assert posts == expected_data

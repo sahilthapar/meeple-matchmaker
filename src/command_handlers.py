@@ -79,7 +79,7 @@ I help match buyers and sellers in the Meeple Market Telegram channel.
 *How to use:*
 - Start your message with a hashtag and the game name (as listed on BGG).
   - To buy: #lookingfor, #iso, #looking
-  - To sell: #sale, #sell, #selling, #auction, #seekinginterest
+  - To sell: #sale, #sell, #selling, #auction (Not allowed in DMs)
 - The bot will check the game name on BGG and react with 👍 if it finds a match.
 
 *Tip:*
@@ -302,7 +302,7 @@ async def disable_user(update, _):
     admin_ids = [
         995823071, # Sahil Thapar
         6946013582, # Mica
-        635786234, # Anshul J,
+        635786234, # Anshul J
     ]
     if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")

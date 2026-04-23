@@ -15,7 +15,7 @@ The bot uses two things from a posted message in the group
   
 - a message tag, supported tags are:
   - to search for a game: `#lookingfor, #iso, #looking`
-  - to sell a game: `#seekinginterest, #auction, #sale, #sell, #selling`
+  - to sell a game: `#auction, #sale, #sell, #selling`
   - to mark a game as sold: `#sold`
   - to mark a game as found: `#found`
 - a game name, the more accurately your name matches the BGG name, the better your chances of success
@@ -46,7 +46,7 @@ Chaitanya posts a message
 
 Tanuj posts a message a few days later
 ```
-#seekinginterest Ark Nova
+#sell Ark Nova
 ```
 
 The bot will reply to Tanuj's message and tag Deepak and Chaitanya
@@ -60,7 +60,7 @@ The bot will reply to Tanuj's message and tag Deepak and Chaitanya
 | Command                    | Description                                           | Private / Group Support     | Notes                                                                                      |
 |----------------------------|-------------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------|
 | #lookingfor game_name      | Adds game_name to your search list                    | Both Private and Group Chat | Supported tags are #lookingfor, #looking, #iso                                             |
-| #sale game_name            | Adds game_name to your sale list                      | Both Private and Group Chat | Supported tags are #sale, #seekinginterest, #selling, #auction                             |
+| #sale game_name            | Adds game_name to your sale list                      | Both Private and Group Chat | Supported tags are #sale, #selling, #auction                             |
 | #sold game_name            | Removes game_name from your sale list                 | Both Private and Group Chat |                                                                                            |
 | #found game_name           | Removes game_name from your search list               | Both Private and Group Chat |                                                                                            |
 | /start                     | Gives a detailed message explaining what the bot does | Private Only                |                                                                                            |

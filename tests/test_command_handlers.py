@@ -1,16 +1,18 @@
-import pytest
+"""Test file for all command handlers"""
 import textwrap
 import os
+import pytest
 from boardgamegeek import BGGClient
 
 from src.command_handlers import format_list_of_posts, format_post
-from src.models import db
-from tests.test_message_handlers import TestMessageHandlers
 from src.database import init_tables
+from tests.test_message_handlers import TestMessageHandlers
 
 class TestCommandHandlers:
+    """Class containing all test cases to be executed for command handlers"""
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
+        """Fixture that can be used to replace bgg_client with a mock eventually"""
         return BGGClient(access_token=os.getenv('BGG_BEARER'))
 
     @pytest.mark.parametrize(
@@ -66,6 +68,7 @@ class TestCommandHandlers:
 
     )
     def test_format_list_of_posts(self, database, posts, expected_reply):
+        """Tests whether the formatted list of posts is as expected"""
         init_tables(database)
         posts_orm = []
         for post_type, game_id, user_id, user_name, game_name, active in posts:
@@ -93,6 +96,7 @@ class TestCommandHandlers:
 
     )
     def test_format_post(self, bgg_client, database, post, expected_response):
+        """Tests the individual format post function"""
         init_tables(database)
         post_type, game_id, user_id, user_name, game_name, active = post
         post = TestMessageHandlers.initialize_post(

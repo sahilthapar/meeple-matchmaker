@@ -1,8 +1,8 @@
-import pytest
 import os
+import pytest
 from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
 from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
-                              get_game_details, get_message_contents, get_message_without_command)
+                              get_game_details, get_message_contents, get_message_without_command, is_post_type_banned, find_post_type)
 
 from src.models import Post, Game, User, db
 from src.database import init_tables
@@ -49,7 +49,6 @@ class TestMessageParsing:
             ("#lookingfor Ark Nova", "#lookingfor"),
             ("#sale Ark Nova", "#sale"),
             ("#selling Ark Nova", "#selling"),
-            ("#seekinginterest Ark Nova", "#seekinginterest"),
             ("#sell Ark Nova", "#sell"),
             ("#sold Ark Nova", "#sold"),
             ("#found Ark Nova", "#found"),
@@ -58,7 +57,7 @@ class TestMessageParsing:
             ("#looking Ark Nova", "#looking"),
         ],
         ids=[
-            "search", "sale", "sale-selling", "sale-seekinginterest", "sale-sell",
+            "search", "sale", "sale-selling", "sale-sell",
             "sold", "found", "sale-auction", "search-iso", "search-looking"
         ]
     )
@@ -71,7 +70,6 @@ class TestMessageParsing:
             ("#lookingfor", "search"),
             ("#sale", "sale"),
             ("#selling", "sale"),
-            ("#seekinginterest", "sale"),
             ("#sell", "sale"),
             ("#sold", "sold"),
             ("#found", "found"),
@@ -83,7 +81,6 @@ class TestMessageParsing:
             "lookingfor",
             "sale",
             "selling",
-            "seekinginterest",
             "sell",
             "sold",
             "found",
@@ -177,13 +174,12 @@ class TestMessageParsing:
         argnames="message, user_id, expected_type, expected_game_id, expected_game_name",
         argvalues=[
             ("#lOokingFor monopoly", 101, "search", 1406, "Monopoly"),
-            ("#seekingInterest Terraforming Mars", 102, "sale", 167791, "Terraforming Mars"),
             ("#sale Guild of Merchant Explorers", 103, "sale", 350933, "The Guild of Merchant Explorers"),
             ("#selling Lost Ruins of Arnak", 104, "sale", 312484, "Lost Ruins of Arnak"),
             ("just a #message no game", 105, "post", None, None)
         ],
         ids=[
-            "search", "interest", "sale", "sale-selling", "no-type"
+            "search", "sale", "sale-selling", "no-type"
         ]
 
     )
@@ -230,3 +226,32 @@ class TestMessageParsing:
     def test_get_message_without_command(self, mock_message, message, bgg_username):
         mock_message.text = message
         assert get_message_without_command(mock_message) == bgg_username
+    
+    @pytest.mark.parametrize(
+        argnames="message, post_type",
+        argvalues=[
+            ("#sold The White Castle", "sold"),
+            ("#sale The White Castle", "sale"),
+            ("#selling The White Castle", "sale"),
+            ("#auction The White Castle", "sale"),
+            ("#found The White Castle", "found"),
+            ("#lookingfor The White Castle", "search"),
+        ]
+    )
+    def test_find_post_type(self, mock_message, message, post_type):
+        """Test if the function returns the correct post type for a specific message"""
+        mock_message.text = message
+        assert find_post_type(mock_message) == post_type
+
+    @pytest.mark.parametrize(
+            argnames = "post, banned",
+            argvalues = [
+                ({"type":"sale","chat_type":"private"}, True),
+                ({"type":"sale","chat_type":"group"}, False),
+                ({"type":"found","chat_type":"private"}, False),
+                ({"type":"found","chat_type":"group"}, True),
+                ]
+            )
+    def test_is_post_type_banned(self, post, banned):
+        """Test if the function returns the correct boolean for a specific post type"""
+        assert is_post_type_banned(post['type'], post['chat_type']) is banned
