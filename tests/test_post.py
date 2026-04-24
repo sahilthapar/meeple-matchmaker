@@ -1,18 +1,17 @@
-import os
 import pytest
-from boardgamegeek import BGGClient, CacheBackendMemory  #type: ignore
 from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
                               get_game_details, get_message_contents, get_message_without_command, is_post_type_banned, find_post_type)
 
 from src.models import Post, Game, User, db
 from src.database import init_tables
+from tests.conftest import MockBGGClient
 
 class TestMessageParsing:
 
     @pytest.fixture(name="bgg_client")
     def bgg_client(self):
-        return BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
-
+        return MockBGGClient()
+    
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
         return mocker.patch("telegram.Message")
@@ -183,13 +182,13 @@ class TestMessageParsing:
         ]
 
     )
-    def test_parse_message(self, mock_message, initialize_db, message, user_id, expected_type, expected_game_id, expected_game_name):
+    def test_parse_message(self, mock_message, initialize_db, message, user_id, expected_type, expected_game_id, expected_game_name, bgg_client):
         mock_message.text = message
         mock_message.from_user.id = user_id
         mock_message.from_user.first_name = str(user_id * 100)
         mock_message.from_user.last_name = str(user_id * 50)
 
-        post, game, user = parse_message(mock_message)
+        post, game, user = parse_message(mock_message, bgg_client)
 
         if not post:
             assert post == expected_game_id

@@ -1,12 +1,11 @@
 """Module providing miscellaneous processing methods related to telegram posts"""
 
-import os
 import re
 from logging import getLogger
 from typing import Optional, Tuple
 
 from telegram import Message
-from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
+from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
 
 from src.models import Game, User, Post
 
@@ -104,7 +103,7 @@ def get_message_without_command(message: Message) -> str:
     text = get_message_contents(message)
     return text.split(" ")[1]
 
-def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
+def parse_message(message: Message, bgg_client) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
     """
     Parses a telegram message to find details about game, user and the message
     returns ORM for Post, Game, User
@@ -127,7 +126,6 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     # parse game info
     game_name = parse_game_name(message_without_tag)
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
     game = get_game_details(game_name, bgg_client)
     if not game:
         log.warning("Game not found")
