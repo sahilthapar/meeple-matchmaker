@@ -26,6 +26,7 @@ def format_post(post: Post, bgg_client: BGGClient) -> str:
     if not game_name:
         log.warning("Game name not found in database, searching BGG")
         try:
+            # Game name not used, not sure if this block is relevant anymore
             _ = bgg_client.game(game_id=game_id)
         except BGGApiError:
             log.error("game_id: %s", game_id)

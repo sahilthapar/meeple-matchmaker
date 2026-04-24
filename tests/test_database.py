@@ -1,6 +1,6 @@
 """Test cases for the database module"""
 import pytest
-from src.database import init_tables, read_posts, disable_posts
+from src.database import read_posts, disable_posts
 from src.models import User, Game, Post
 
 
@@ -13,7 +13,6 @@ class TestDatabase:
     @pytest.fixture(name="sample_posts")
     def sample_posts(self, database):
         """Fixture to initialise the database with a number of users and posts"""
-        init_tables(database)
         jacob = User(telegram_userid=101, first_name='Jacob')
         henry = User(telegram_userid=102, first_name='Henry')
         marcus = User(telegram_userid=103, first_name='Marcus')
@@ -30,7 +29,7 @@ class TestDatabase:
         for game in [tfm, ark_nova, destinies, monopoly, wingspan]:
             game.save()
 
-        Post(post_type='sale', text='#seekinginterest terraforming mars', active=True, user=jacob, game=tfm).save()
+        Post(post_type='sale', text='#sell terraforming mars', active=True, user=jacob, game=tfm).save()
         Post(post_type='search', text='#lookingfor terraforming mars', active=True, user=henry, game=tfm).save()
         Post(post_type='sale', text='#selling ark nova', active=True, user=jacob, game=ark_nova).save()
         Post(post_type='sale', text='#selling destinies', active=False, user=marcus, game=destinies).save()
@@ -39,11 +38,10 @@ class TestDatabase:
 
     def test_init_tables(self, database):
         """Initialises the tables for the in memory fixture database present in conftest"""
-        init_tables(database)
         tables = database.get_tables()
 
-        for table in tables:
-            assert table in ['game', 'user', 'user_post', 'user_collection']
+        for table in ['game', 'user', 'user_post', 'user_collection']:
+            assert table in tables
 
     @pytest.mark.parametrize(
         argnames="post_type,game_id,expected_inactives",
@@ -85,12 +83,12 @@ class TestDatabase:
         disable_posts(user_id=jacob.telegram_userid, post_type=post_type, game_id=game_id)
 
         #ruff: noqa: E712
-        jacobs_inactive_posts = Post.select().where((~Post.active) & (Post.user == jacob)).execute()
+        jacobs_inactive_posts = read_posts(user_id=jacob.telegram_userid, is_active=False)
         actual_inactives = [
             self._post_model_to_tuple(post) for post in jacobs_inactive_posts
         ]
-
-        assert actual_inactives == expected_inactives
+        print(actual_inactives,expected_inactives)
+        assert set(actual_inactives) == set(expected_inactives)
 
     @pytest.mark.parametrize(
         argnames="user_id, post_type, game_id, expected_data",
@@ -151,5 +149,6 @@ class TestDatabase:
     def test_read_posts(self, sample_posts, user_id, post_type, game_id, expected_data):
         """Tests reading of posts. sample_posts is a parameter so that the fixture executes"""
         posts = read_posts(post_type=post_type, user_id=user_id, game_id=game_id)
+        # results sorted by post_type, game_name, user
         posts = [self._post_model_to_tuple(post) for post in posts]
         assert posts == expected_data

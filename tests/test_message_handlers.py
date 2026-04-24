@@ -1,47 +1,19 @@
 """Test file for all message handlers"""
 from types import SimpleNamespace
-import asyncio
 import pytest
 
-from src.database import init_tables
 from src.message_handlers import message_handler
 from src.models import Post, Game, User
-
+from tests.helpers import initialize_post
 pytest_plugins = ('pytest_asyncio',)
 
 class TestMessageHandlers:
     """Class containing all test cases for message handlers"""
-    @pytest.fixture(name="mock_update")
-    def mock_update(self, mocker):
-        """Fixture thats used to mock a telegram update entity"""
-        update = mocker.patch("telegram.Update")
-        f = asyncio.Future()
-        f.set_result('text')
-        update.message.reply_text.return_value = f
-        update.message.set_reaction.return_value = f
-
-        return update
 
     @pytest.fixture(name="mock_context")
     def mock_context(self, mocker):
         """Fixture to mock a telegram context"""
         mocker.patch("telegram.ext.ContextTypes.DEFAULT_TYPE")
-
-    @staticmethod
-    def initialize_post(
-            post_type: str, text: str, active: bool,
-            user_id: int, user_name: str,
-            game_id: int, game_name: str
-    ):
-        """Fixture that initialises a specific post for a user-game-post_type set"""
-        user, _ = User.get_or_create(telegram_userid=user_id, first_name=user_name)
-        game, _ = Game.get_or_create(game_id=game_id, game_name=game_name)
-
-        user.save()
-        game.save()
-        post = Post(post_type=post_type, text=text, active=active, user=user, game=game)
-        post.save()
-        return post
 
     @pytest.mark.parametrize(
         argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction",
@@ -132,7 +104,7 @@ class TestMessageHandlers:
             "scenario3-simple-sale-followed-by-a-sold",
             "scenario4-simple-search-followed-by-a-found-private",
             "scenario5-simple-search-followed-by-a-found-group",
-            "scenario5-simple-search-followed-by-a-sell-private",
+            "scenario6-simple-search-followed-by-a-sell-private",
         ]
     )
     @pytest.mark.asyncio
@@ -147,9 +119,8 @@ class TestMessageHandlers:
         chat_type,
         expected_reaction):
         """Tests multiple scenarios passed to the message handler"""
-        init_tables(database)
         for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
-            self.initialize_post(
+            initialize_post(
                 post_type=post_type, text=text, active=active,
                 user_id=user_id, user_name=user_name,
                 game_id=game_id, game_name=game_name
@@ -166,6 +137,8 @@ class TestMessageHandlers:
             if reply:
                 mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
             mock_update.message.set_reaction.assert_called_once_with(expected_reaction)
+            # Reset so that assert_called_once doesnt trip if more than one message is present
+            mock_update.message.reply_text.reset_mock()
 
         # Additional assertions for 'sold' and 'found' scenarios
         if any(msg.text.lower().startswith("#sold") for msg in new_messages):

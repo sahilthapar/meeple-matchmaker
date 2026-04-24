@@ -82,7 +82,6 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return
-    return
 
 def create_user_from_message(message: Message) -> User:
     """
