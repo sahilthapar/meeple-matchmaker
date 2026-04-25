@@ -1,11 +1,10 @@
 """telegram bot handlers for specific message types"""
-import os
 import logging
 from typing import Optional
 
 from telegram.ext import ContextTypes
 from telegram import Update
-from boardgamegeek import BGGClient, CacheBackendMemory  # type: ignore
+from boardgamegeek import BGGClient  # type: ignore
 
 from src.telegrampost import parse_message, find_post_type, is_post_type_banned
 from src.database import read_posts, disable_posts
@@ -21,7 +20,7 @@ COMPLEMENTARY_POST_TYPE = {
     "found": "search"
 }
 
-async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_client:BGGClient) -> None:
     """
     Primary message handler which passes the message to specialized handler based on the post_type
     after parsing the message
@@ -42,9 +41,6 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     log.info("Attempting to parse message")
-
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
-
     post, game, user = parse_message(update.message, bgg_client) if update.message else (None, None, None)
     if not post or not game or not user:
         return

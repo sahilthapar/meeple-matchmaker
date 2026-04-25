@@ -117,7 +117,8 @@ class TestMessageHandlers:
         new_messages,
         expected_replies,
         chat_type,
-        expected_reaction):
+        expected_reaction,
+        bgg_client):
         """Tests multiple scenarios passed to the message handler"""
         for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
             initialize_post(
@@ -133,7 +134,7 @@ class TestMessageHandlers:
             mock_update.message.from_user.first_name = msg.first_name
             mock_update.effective_chat.type = chat_type
 
-            await message_handler(mock_update, mock_context)
+            await message_handler(mock_update, mock_context,bgg_client)
             if reply:
                 mock_update.message.reply_text.assert_called_once_with(reply, parse_mode="Markdown")
             mock_update.message.set_reaction.assert_called_once_with(expected_reaction)
@@ -159,6 +160,3 @@ class TestMessageHandlers:
                         assert post.active is False
                     else:
                         assert post.active is True
-
-
-    

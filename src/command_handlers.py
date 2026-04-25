@@ -12,6 +12,12 @@ from src.database import disable_posts, read_posts
 
 log = logging.getLogger("meeple-matchmaker")
 
+admin_ids = [
+    995823071, # Sahil Thapar
+    6946013582, # Mica
+    635786234, # Anshul J
+]
+
 def format_post(post: Post, bgg_client: BGGClient) -> str:
     """
     Method to format a record for replying on telegram
@@ -267,9 +273,9 @@ async def match_me(update, _):
     """
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
+        return
     user = create_user_from_message(update.message)
     posts = read_posts(user_id=user.telegram_userid)
-
     user_searches = [p for p in posts if p.post_type == 'search']
     user_sales = [p for p in posts if p.post_type == 'sale']
 
@@ -284,7 +290,6 @@ async def match_me(update, _):
 
     reply_sales = format_list_of_posts(matched_searches)
     reply_searches = format_list_of_posts(matched_sales)
-
     for part in chain(reply_searches, reply_sales):
         await update.message.reply_text(part, parse_mode="Markdown")
 
@@ -300,11 +305,6 @@ async def disable_user(update, _):
         await update.message.set_reaction("👎")
         return
 
-    admin_ids = [
-        995823071, # Sahil Thapar
-        6946013582, # Mica
-        635786234, # Anshul J
-    ]
     if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")
         return
