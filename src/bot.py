@@ -45,8 +45,11 @@ def init_app(auth_token):
 def init_message_handler():
     """Returns the message handler with the bgg_client injected. Allows easier testing"""
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
-    return lambda update,_: message_handler(update,_,bgg_client)
 
+    async def handler(update,context):
+        await message_handler(update,context,bgg_client)
+
+    return handler
 
 if __name__ == "__main__":
     with open('auth.json', mode="r", encoding="utf-8") as f:
