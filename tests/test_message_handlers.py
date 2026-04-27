@@ -5,7 +5,6 @@ import pytest
 from src.message_handlers import message_handler
 from src.models import Post, Game, User
 from tests.helpers import initialize_post
-pytest_plugins = ('pytest_asyncio',)
 
 class TestMessageHandlers:
     """Class containing all test cases for message handlers"""
@@ -107,7 +106,6 @@ class TestMessageHandlers:
             "scenario6-simple-search-followed-by-a-sell-private",
         ]
     )
-    @pytest.mark.asyncio
     async def test_scenario(
         self,
         database,

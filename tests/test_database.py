@@ -87,7 +87,6 @@ class TestDatabase:
         actual_inactives = [
             self._post_model_to_tuple(post) for post in jacobs_inactive_posts
         ]
-        print(actual_inactives,expected_inactives)
         assert set(actual_inactives) == set(expected_inactives)
 
     @pytest.mark.parametrize(

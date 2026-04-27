@@ -41,8 +41,8 @@ def read_posts(
 
     data = Post\
         .select(Post.post_type, Post.user, Post.game, Post.active, Game.game_id, Game.game_name, User.first_name, User.telegram_userid)\
-        .join(Game, on = Post.game == Game.id)\
-        .join(User, on = Post.user == User.id) \
+        .join(Game, on=Post.game == Game.id)\
+        .join(User, on=Post.user == User.id) \
         .where(reduce(operator.and_, clauses)) \
         .order_by(Post.post_type, Game.game_name, User.first_name) \
         .distinct()

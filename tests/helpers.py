@@ -1,4 +1,5 @@
 
+"""Contains helper functions used across the tests"""
 from boardgamegeek import BGGItemNotFoundError
 from src.models import  User, Game, Post
 def initialize_post(

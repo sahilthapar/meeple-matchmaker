@@ -308,7 +308,10 @@ async def disable_user(update, _):
     if update.message.from_user.id not in admin_ids:
         await update.message.reply_text("Sorry this command is only available to the admin!")
         return
-
-    user_to_disable = get_message_without_command(update.message)
+    try:
+        user_to_disable = get_message_without_command(update.message)
+    except IndexError:
+        await update.message.reply_text("Please enter a user id")
+        return
     disable_posts(user_id=int(user_to_disable))
     await update.message.set_reaction("👍")

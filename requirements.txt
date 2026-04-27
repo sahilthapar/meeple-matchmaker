@@ -1,5 +1,5 @@
 bgg-api==1.1.13
-python-telegram-bot==21.6
+python-telegram-bot==22.7
 peewee==3.17.7
 
 pytest==8.2.1

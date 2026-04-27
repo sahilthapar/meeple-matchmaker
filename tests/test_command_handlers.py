@@ -3,7 +3,18 @@ from types import SimpleNamespace
 import textwrap
 from unittest.mock import call
 import pytest
-from src.command_handlers import format_list_of_posts, format_post, start_command, disable_command, list_all_active_sales, list_all_active_searches, list_my_active_posts, add_bgg_username, get_status_from_bgg_game, import_my_bgg_collection, match_me, disable_user
+from src.command_handlers import (
+     format_list_of_posts,
+     format_post,
+     start_command,
+     disable_command,
+     list_all_active_sales,
+     list_all_active_searches,
+     list_my_active_posts,
+     add_bgg_username,
+     get_status_from_bgg_game,
+     match_me,
+     disable_user)
 from tests.helpers import initialize_post
 
 class TestCommandHandlers:
@@ -407,12 +418,11 @@ class TestCommandHandlers:
         mock_disable_posts = mocker.patch("src.command_handlers.disable_posts")
         admin_ids = mocker.patch("src.command_handlers.admin_ids", new=["102","103"])
  
-        if user_to_disable is None:
-            with pytest.raises(IndexError):
-                await disable_user(mock_update, None)
-            return
             
         await disable_user(mock_update, None)
+        if user_to_disable is None:
+            mock_update.message.reply_text.assert_called_once_with("Please enter a user id")
+            return
         if update_details["chat_type"]!="private":
             mock_update.message.set_reaction.assert_called_once_with("👎")
             return

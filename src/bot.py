@@ -19,6 +19,7 @@ log = logging.getLogger("meeple-matchmaker")
 
 def init_app(auth_token):
     """Sets up the telegram app with command and message handlers"""
+
     app = ApplicationBuilder().token(auth_token).build()
     db.init("database/meeple-matchmaker.db")
     log.info("Connected to DB")
@@ -35,19 +36,17 @@ def init_app(auth_token):
     app.add_handler(CommandHandler("import_my_bgg_collection", import_my_bgg_collection))
     app.add_handler(CommandHandler("match_me", match_me))
 
+    # Generate the message handler with the bgg client so bgg_client doesn't get re-initialised on each message
+    message_handler_with_client = init_message_handler()
     # message handlers
-    app.add_handler(MessageHandler(filters=None, callback=init_message_handler))
-
-    # # Ensure an event loop exists for asyncio on Python 3.10+
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    app.add_handler(MessageHandler(filters=None, callback=message_handler_with_client))
 
     return app
 
-def init_message_handler(update,_):
-    """Initialises message handler with the bgg_client. Allows easier testing"""
+def init_message_handler():
+    """Returns the message handler with the bgg_client injected. Allows easier testing"""
     bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
-    return message_handler(update,_,bgg_client)
+    return lambda update,_: message_handler(update,_,bgg_client)
 
 
 if __name__ == "__main__":
