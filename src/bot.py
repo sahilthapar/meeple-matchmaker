@@ -1,7 +1,6 @@
 """Entry point for telegram bot"""
 import json
 import logging
-import asyncio
 import os
 from boardgamegeek import BGGClient, CacheBackendMemory  # type: ignore
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
