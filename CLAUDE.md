@@ -50,7 +50,7 @@ Test files mirror source modules: `test_post.py` → `telegrampost.py`, `test_da
 
 ## Key Concepts
 
-- **Post types:** `search` (#lookingfor, #iso, #looking), `sale` (#sale, #selling, #sell, #auction, #seekinginterest), `found`, `sold`
+- **Post types:** `search` (#lookingfor, #iso, #looking), `sale` (#sale, #selling, #sell, #auction), `found`, `sold`
 - **Matching:** a `search` post matches against active `sale` posts for the same game, and vice versa
 - **Deactivation:** `#found` disables the user's active `search` posts; `#sold` disables active `sale` posts
 - **BGG lookup:** first tries exact match, falls back to fuzzy match; results are cached for 7 days

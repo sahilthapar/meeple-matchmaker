@@ -1,17 +1,19 @@
+"""Test file for all message handlers"""
+from types import SimpleNamespace
 import asyncio
 import pytest
-from types import SimpleNamespace
 
 from src.database import init_tables
 from src.message_handlers import message_handler
+from src.models import Post, Game, User
 
-from src.models import Post, Game, User, db
 pytest_plugins = ('pytest_asyncio',)
 
 class TestMessageHandlers:
-
+    """Class containing all test cases for message handlers"""
     @pytest.fixture(name="mock_update")
     def mock_update(self, mocker):
+        """Fixture thats used to mock a telegram update entity"""
         update = mocker.patch("telegram.Update")
         f = asyncio.Future()
         f.set_result('text')
@@ -22,6 +24,7 @@ class TestMessageHandlers:
 
     @pytest.fixture(name="mock_context")
     def mock_context(self, mocker):
+        """Fixture to mock a telegram context"""
         mocker.patch("telegram.ext.ContextTypes.DEFAULT_TYPE")
 
     @staticmethod
@@ -30,6 +33,7 @@ class TestMessageHandlers:
             user_id: int, user_name: str,
             game_id: int, game_name: str
     ):
+        """Fixture that initialises a specific post for a user-game-post_type set"""
         user, _ = User.get_or_create(telegram_userid=user_id, first_name=user_name)
         game, _ = Game.get_or_create(game_id=game_id, game_name=game_name)
 
@@ -69,7 +73,7 @@ class TestMessageHandlers:
                 [
                     "[alpha](tg://user?id=101), [beta](tg://user?id=102)"
                 ],
-                "private",
+                "group",
                 "👍"
             ),
             # simple scenario with a sale post followed by a sold post
@@ -108,6 +112,18 @@ class TestMessageHandlers:
                 "group",
                 "👎"
             ),
+            # simple scenario with a sale post in private chat
+            (
+                [
+                    ('search', 167791, '#lookingfor terraforming mars', '101', 'alpha', 1, 'Terraforming Mars')
+                ],
+                [
+                    SimpleNamespace(text="#sell terraforming mars", id=102, first_name="Beta")
+                ],
+                [''],
+                "private",
+                "👎"
+            ),
             # todo: scenario with disable notifications in between
         ],
         ids=[
@@ -116,10 +132,21 @@ class TestMessageHandlers:
             "scenario3-simple-sale-followed-by-a-sold",
             "scenario4-simple-search-followed-by-a-found-private",
             "scenario5-simple-search-followed-by-a-found-group",
+            "scenario5-simple-search-followed-by-a-sell-private",
         ]
     )
     @pytest.mark.asyncio
-    async def test_scenario(self, database, init_posts, mock_update, mock_context, new_messages, expected_replies, chat_type, expected_reaction):
+    async def test_scenario(
+        self,
+        database,
+        init_posts,
+        mock_update,
+        mock_context,
+        new_messages,
+        expected_replies,
+        chat_type,
+        expected_reaction):
+        """Tests multiple scenarios passed to the message handler"""
         init_tables(database)
         for post_type, game_id, text, user_id, user_name, active, game_name in init_posts:
             self.initialize_post(
@@ -133,10 +160,7 @@ class TestMessageHandlers:
             mock_update.message.text = msg.text
             mock_update.message.from_user.id = msg.id
             mock_update.message.from_user.first_name = msg.first_name
-
-            # Set chat type for 'found' scenario
-            if msg.text.lower().startswith("#found"):
-                mock_update.effective_chat.type = chat_type
+            mock_update.effective_chat.type = chat_type
 
             await message_handler(mock_update, mock_context)
             if reply:

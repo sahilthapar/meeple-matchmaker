@@ -9,7 +9,7 @@ from src.command_handlers import (
     add_bgg_username, disable_user, import_my_bgg_collection, match_me
 )
 from src.models import db
-
+from src.database import init_tables
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -21,6 +21,9 @@ if __name__ == "__main__":
         token = json.load(f)["TOKEN"]
         app = ApplicationBuilder().token(token).build()
         db.init("database/meeple-matchmaker.db")
+        log.info("Connected to DB")
+        # Create tables. If they exist, nothing happens
+        init_tables(db)
         # command handlers
         app.add_handler(CommandHandler("start", start_command))
         app.add_handler(CommandHandler("disable", disable_command))

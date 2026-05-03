@@ -1,10 +1,12 @@
+"""Module providing miscellaneous processing methods related to telegram posts"""
+
 import os
+import re
+from logging import getLogger
+from typing import Optional, Tuple
 
 from telegram import Message
-from typing import Optional, Tuple
-from logging import getLogger
 from boardgamegeek import BGGClient, BGGItemNotFoundError, CacheBackendMemory  # type: ignore
-import re
 
 from src.models import Game, User, Post
 
@@ -17,20 +19,29 @@ TYPE_LOOKUP = {
     "#looking": "search",
     "#sale": "sale",
     "#selling": "sale",
-    "#seekinginterest": "sale",
     "#sell": "sale",
     "#auction": "sale",
     "#sold": "sold",
     "#found": "found",
 }
 
+POST_TYPES_BANNED_IN_DM = [
+    "sale"
+]
+
+POST_TYPES_BANNED_IN_GROUP = [
+    "found"
+]
+
 def get_message_contents(message: Message) -> str:
+    """Extract the text or caption from a message"""
     text = message.text or message.caption
     return text.lower() if text else ""
 
 def parse_tag(message: str) -> str:
+    """Extracts the tag used in the message"""
     tag = re.search(
-        pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#seekinginterest|^#sell|^#auction|^#sold|^#found",
+        pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#sell|^#auction|^#sold|^#found",
         string=message
     )
     if not tag:
@@ -38,12 +49,17 @@ def parse_tag(message: str) -> str:
     return tag.group()
 
 def parse_game_name(message: str) -> str:
+    """Performs string replacement (if required) and returns the game name as typed by the user"""
     first_line = message.strip().split("\n")[0]
     return first_line.replace("game name:", "").replace("game:", "").strip()
 
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
+    """
+    Uses the BGG Client to fetch a game based on its name. 
+    If found, checks the DB for an existing entry, otherwise creates the game and returns the model.
+    """
     try:
-        log.info(f"Trying exact match for game: {game_name}")
+        log.info("Trying exact match for game: %s", game_name)
         # todo: use .search instead of .game
         game_exact = bgg_client.game(game_name, exact=True)
         if game_exact:
@@ -84,6 +100,7 @@ def create_user_from_message(message: Message) -> User:
     return user
 
 def get_message_without_command(message: Message) -> str:
+    """Extracts the message text by deleting the first word (usually a commmand)"""
     text = get_message_contents(message)
     return text.split(" ")[1]
 
@@ -129,3 +146,20 @@ def parse_message(message: Message) -> Tuple[Optional[Post], Optional[Game], Opt
 
     return post, game, user
 
+def find_post_type(message: Message) -> Optional[str]:
+    """
+    Finds the post type from a message (eg: sale, found)
+    """
+    message_text = get_message_contents(message)
+    tag = parse_tag(message_text)
+    post_type = TYPE_LOOKUP.get(tag, None)
+    return post_type
+
+
+def is_post_type_banned(post_type:str, chat_type:str) -> bool:
+    """
+    True if a post type is not allowed in its specific context (DM or group)
+    """
+    banned_in_dm = post_type in POST_TYPES_BANNED_IN_DM and chat_type=="private"
+    banned_in_group = post_type in POST_TYPES_BANNED_IN_GROUP and chat_type!="private"
+    return banned_in_dm or banned_in_group
