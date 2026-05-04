@@ -4,6 +4,7 @@ from typing import Optional
 
 from telegram.ext import ContextTypes
 from telegram import Update
+from boardgamegeek import BGGClient  # type: ignore
 
 from src.telegrampost import parse_message, find_post_type, is_post_type_banned
 from src.database import read_posts, disable_posts
@@ -19,7 +20,7 @@ COMPLEMENTARY_POST_TYPE = {
     "found": "search"
 }
 
-async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_client:BGGClient) -> None:
     """
     Primary message handler which passes the message to specialized handler based on the post_type
     after parsing the message
@@ -40,7 +41,7 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     log.info("Attempting to parse message")
-    post, game, user = parse_message(update.message) if update.message else (None, None, None)
+    post, game, user = parse_message(update.message, bgg_client) if update.message else (None, None, None)
     if not post or not game or not user:
         return
     if update.message:
