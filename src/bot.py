@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
 from src.message_handlers import message_handler
 from src.command_handlers import (
     start_command, disable_command, list_all_active_sales, list_all_active_searches, list_my_active_posts,
-    add_bgg_username, disable_user, import_my_bgg_collection, match_me
+    add_bgg_username, disable_user, import_my_bgg_collection, match_me, disable_post_for_user
 )
 from src.models import db
 from src.database import init_tables
@@ -32,6 +32,7 @@ def init_app(auth_token):
     app.add_handler(CommandHandler("list_my_posts", list_my_active_posts))
     app.add_handler(CommandHandler("add_bgg_username", add_bgg_username))
     app.add_handler(CommandHandler("disable_user", disable_user))
+    app.add_handler(CommandHandler("disable_post_for_user", disable_post_for_user))
     app.add_handler(CommandHandler("import_my_bgg_collection", import_my_bgg_collection))
     app.add_handler(CommandHandler("match_me", match_me))
 

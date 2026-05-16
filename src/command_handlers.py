@@ -1,4 +1,5 @@
 """Handler for telegram bot commands"""
+import re
 import textwrap
 import logging
 import os
@@ -9,7 +10,15 @@ from boardgamegeek.objects.games import CollectionBoardGame
 from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_message_without_command
 from src.database import disable_posts, read_posts
-
+from src.messages import (
+    INVALID_DISABLE_POST_FOR_USER,
+    INVALID_NOT_AN_ADMIN,
+    INVALID_DISABLE_USER,
+    INVALID_ADD_BGG_USERNAME_ERROR,
+    INVALID_ADD_BGG_USERNAME_NOT_FOUND,
+    INVALID_ADD_BGG_USERNAME_SHOW_FORMAT,
+    MEEPLE_MATCHMAKER_START
+    )
 log = logging.getLogger("meeple-matchmaker")
 
 admin_ids = [
@@ -78,25 +87,7 @@ async def start_command(update, _):
     :param _:
     :return:
     """
-    reply = """
-Hi! I'm Meeple Matchmaker Bot.
-
-I help match buyers and sellers in the Meeple Market Telegram channel.
-
-*How to use:*
-- Start your message with a hashtag and the game name (as listed on BGG).
-  - To buy: #lookingfor, #iso, #looking
-  - To sell: #sale, #sell, #selling, #auction (Not allowed in DMs)
-- The bot will check the game name on BGG and react with 👍 if it finds a match.
-
-*Tip:*
-Keep the first line to just the hashtag and game name. Add details (condition, price, location) on new lines.
-
-[Full guide & features](https://github.com/sahilthapar/meeple-matchmaker/blob/main/README.md)
-[FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
-Suggestions? Use the chit chat group or [GitHub issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
-**Don't post suggestions in the main channel.**
-"""
+    reply = MEEPLE_MATCHMAKER_START
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
@@ -180,12 +171,8 @@ async def add_bgg_username(update, _):
             user.save()
             await update.message.set_reaction("👍")
         except IndexError:
-            await update.message.reply_text(
-                "Invalid username! Add username after the command. Copy the example below."
-            )
-            await update.message.reply_text(
-                "/add_bgg_username my-username"
-            )
+            await update.message.reply_text(INVALID_ADD_BGG_USERNAME_ERROR)
+            await update.message.reply_text(INVALID_ADD_BGG_USERNAME_SHOW_FORMAT)
             await update.message.set_reaction("👎")
 
 
@@ -217,9 +204,7 @@ async def import_my_bgg_collection(update, _):
         await update.message.set_reaction("👎")
     else:
         if not user.bgg_username:
-            await update.message.reply_text(
-                "No BGG username found! Please attach a BGG User using the command /add_bgg_username <your-username>"
-            )
+            await update.message.reply_text(INVALID_ADD_BGG_USERNAME_NOT_FOUND)
             await update.message.set_reaction("👎")
 
             raise KeyError("No BGG username found! Please attach a BGG User")
@@ -306,12 +291,43 @@ async def disable_user(update, _):
         return
 
     if update.message.from_user.id not in admin_ids:
-        await update.message.reply_text("Sorry this command is only available to the admin!")
+        await update.message.reply_text(INVALID_NOT_AN_ADMIN)
         return
     try:
-        user_to_disable = get_message_without_command(update.message)
+        pattern = r"(?:\/disable_user)\s+(\d+)\s+(sale|search|all)$"
+        match = re.match(pattern, update.message.text)
+        if match is None or len(match.groups()) < 2:
+            raise IndexError
+        user_id, post_type = match.groups()
+        # set post type to None if admin chooses all, so that the db disables all the post types for that user
+        post_type = None if post_type == "all" else post_type
+        disable_posts(user_id, post_type)
     except IndexError:
-        await update.message.reply_text("Please enter a user id")
+        await update.message.reply_text(INVALID_DISABLE_USER)
         return
-    disable_posts(user_id=int(user_to_disable))
     await update.message.set_reaction("👍")
+
+async def disable_post_for_user(update, _):
+    """
+    Takes in a request to disable a specific post for a user
+    Must be requested by an admin only
+    """
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
+        return
+    if update.message.from_user.id not in admin_ids:
+        await update.message.reply_text(INVALID_NOT_AN_ADMIN)
+        return
+    try:
+        message_contents = update.message.text
+        # Captures a number, a space separated string for game name, and post type as sale or search
+        # pattern = r"(?:\/disable_post_for_user)\s+(\d+)\s+(.+?)\s+(sale|search)$"
+        pattern = r"(?:\/disable_post_for_user)\s+(\d+)\s+(\d+)\s+(sale|search)$"
+        match = re.match(pattern, message_contents)
+        if match is None or len(match.groups()) < 3:
+            raise IndexError
+        user_id, game_id, post_type = match.groups()
+        disable_posts(user_id, post_type, game_id)
+        await update.message.set_reaction("👍")
+    except IndexError:
+        await update.message.reply_text(INVALID_DISABLE_POST_FOR_USER)
