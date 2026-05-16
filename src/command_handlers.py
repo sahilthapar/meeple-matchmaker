@@ -10,13 +10,14 @@ from boardgamegeek.objects.games import CollectionBoardGame
 from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_message_without_command
 from src.database import disable_posts, read_posts
-from src.messages import (INVALID_DISABLE_POST_FOR_USER, 
-                          INVALID_NOT_AN_ADMIN, 
-                          INVALID_DISABLE_USER, 
-                          INVALID_ADD_BGG_USERNAME_ERROR, 
-                          INVALID_ADD_BGG_USERNAME_NOT_FOUND, 
-                          INVALID_ADD_BGG_USERNAME_SHOW_FORMAT
-                          )
+from src.messages import (
+    INVALID_DISABLE_POST_FOR_USER,
+    INVALID_NOT_AN_ADMIN,
+    INVALID_DISABLE_USER,
+    INVALID_ADD_BGG_USERNAME_ERROR,
+    INVALID_ADD_BGG_USERNAME_NOT_FOUND,
+    INVALID_ADD_BGG_USERNAME_SHOW_FORMAT
+    )
 log = logging.getLogger("meeple-matchmaker")
 
 admin_ids = [
