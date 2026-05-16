@@ -16,7 +16,8 @@ from src.messages import (
     INVALID_DISABLE_USER,
     INVALID_ADD_BGG_USERNAME_ERROR,
     INVALID_ADD_BGG_USERNAME_NOT_FOUND,
-    INVALID_ADD_BGG_USERNAME_SHOW_FORMAT
+    INVALID_ADD_BGG_USERNAME_SHOW_FORMAT,
+    MEEPLE_MATCHMAKER_START
     )
 log = logging.getLogger("meeple-matchmaker")
 
@@ -24,7 +25,6 @@ admin_ids = [
     995823071, # Sahil Thapar
     6946013582, # Mica
     635786234, # Anshul J
-    1294547458
 ]
 
 def format_post(post: Post, bgg_client: BGGClient) -> str:
@@ -87,25 +87,7 @@ async def start_command(update, _):
     :param _:
     :return:
     """
-    reply = """
-Hi! I'm Meeple Matchmaker Bot.
-
-I help match buyers and sellers in the Meeple Market Telegram channel.
-
-*How to use:*
-- Start your message with a hashtag and the game name (as listed on BGG).
-  - To buy: #lookingfor, #iso, #looking
-  - To sell: #sale, #sell, #selling, #auction (Not allowed in DMs)
-- The bot will check the game name on BGG and react with 👍 if it finds a match.
-
-*Tip:*
-Keep the first line to just the hashtag and game name. Add details (condition, price, location) on new lines.
-
-[Full guide & features](https://github.com/sahilthapar/meeple-matchmaker/blob/main/README.md)
-[FAQ](https://github.com/sahilthapar/meeple-matchmaker/blob/main/faq.md)
-Suggestions? Use the chit chat group or [GitHub issues](https://github.com/sahilthapar/meeple-matchmaker/issues).
-**Don't post suggestions in the main channel.**
-"""
+    reply = MEEPLE_MATCHMAKER_START
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
