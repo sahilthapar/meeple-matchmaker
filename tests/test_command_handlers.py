@@ -14,7 +14,14 @@ from src.command_handlers import (
      add_bgg_username,
      get_status_from_bgg_game,
      match_me,
-     disable_user)
+     disable_user,
+     disable_post_for_user
+     )
+from src.messages import (
+    INVALID_DISABLE_POST_FOR_USER,
+    INVALID_NOT_AN_ADMIN,
+    INVALID_DISABLE_USER,
+    )
 from tests.helpers import initialize_post
 
 class TestCommandHandlers:
@@ -389,44 +396,194 @@ class TestCommandHandlers:
         expected_calls = [call(op, parse_mode="Markdown") for op in expected_output]
         mock_update.message.reply_text.assert_has_calls(expected_calls)
 
-    @pytest.mark.parametrize(["update_details","user_to_disable"],
+    @pytest.mark.parametrize(["update_details","user_to_disable", "post_type"],
                             [
                                 (
-                                    {"chat_type":"group", "user_id":"101", "text":"/disable_user 101"},
-                                    "101"
+                                    {
+                                        "chat_type":"group", 
+                                        "user_id":"101",
+                                        "text":"/disable_user 101 sale"
+                                    },
+                                    "101",
+                                    "sale"
                                 ),
                                 (
-                                    {"chat_type":"private", "user_id":"102", "text":"/disable_user"},
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"102",
+                                        "text":"/disable_user"
+                                    },
+                                    None,
                                     None
                                 ),
                                 (
-                                    {"chat_type":"private", "user_id":"103", "text":"/disable_user 101"},
-                                    "101"
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_user 101 sale"
+                                    },
+                                    "101",
+                                    "sale"
                                 ),
                                 (
-                                    {"chat_type":"private", "user_id":"101", "text":"/disable_user 101"},
-                                    "101"
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_user 101 search"
+                                    },
+                                    "101",
+                                    "search"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_user 101 all"
+                                    },
+                                    "101",
+                                    # when post type is all, we pass post_type=None to disable_posts so it handles all posts
+                                    None
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_user 101 gibberish"
+                                    },
+                                    "101",
+                                    "gibberish"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"101",
+                                        "text":"/disable_user 101 sale"
+                                    },
+                                    "101",
+                                    "sale"
                                 )
                             ],
-                            ids=["failed_in_group", "invalid_message_format", "successfully_disabled", "non-admin"]
+                            ids=[
+                                "failed_in_group",
+                                "invalid_message_format",
+                                "successfully_disabled_sale",
+                                "successfully_disabled_search",
+                                "successfully_disabled_all",
+                                "invalid_post_type",
+                                 "non-admin"
+                                 ]
                             )
-    async def test_disable_user(self, mock_update, update_details, mocker, user_to_disable):
+    async def test_disable_user(self, mock_update, update_details, mocker, user_to_disable, post_type):
         mock_update.effective_chat.type=update_details["chat_type"]
         mock_update.message.from_user.id=update_details["user_id"]
         mock_update.message.text=update_details["text"]
-        
+
         mock_disable_posts = mocker.patch("src.command_handlers.disable_posts")
         admin_ids = mocker.patch("src.command_handlers.admin_ids", new=["102","103"])
- 
-            
-        await disable_user(mock_update, None)
-        if user_to_disable is None:
-            mock_update.message.reply_text.assert_called_once_with("Please enter a user id")
+
+        await disable_user(mock_update, None)        
+
+        if user_to_disable is None or post_type not in ["sale", "search", None]:
+            mock_update.message.reply_text.assert_called_once_with(INVALID_DISABLE_USER)
             return
         if update_details["chat_type"]!="private":
             mock_update.message.set_reaction.assert_called_once_with("👎")
             return
         if update_details["user_id"] not in admin_ids:
-            mock_update.message.reply_text.assert_called_once_with("Sorry this command is only available to the admin!")
+            mock_update.message.reply_text.assert_called_once_with(INVALID_NOT_AN_ADMIN)
             return
-        mock_disable_posts.assert_called_once_with(user_id=int(user_to_disable))
+        mock_disable_posts.assert_called_once_with(user_to_disable, post_type)
+
+    @pytest.mark.parametrize(["update_details","user_to_disable","game_id", "post_type"],
+                            [
+                                (
+                                    {
+                                        "chat_type":"group", 
+                                        "user_id":"101",
+                                        "text":"/disable_post_for_user 101 312484 sale"
+                                    },
+                                    "101",
+                                    "312484",
+                                    "sale"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"102",
+                                        "text":"/disable_post_for_user"
+                                     },
+                                    None,
+                                    None,
+                                    None
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_post_for_user 101 312484 sale"
+                                    },
+                                    "101",
+                                    "312484",
+                                    "sale"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_post_for_user 101 312484 search"
+                                    },
+                                    "101",
+                                    "312484",
+                                    "search"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"103",
+                                        "text":"/disable_post_for_user 101 312484 gibberish"
+                                    },
+                                    "101",
+                                    "312484",
+                                    "gibberish"
+                                ),
+                                (
+                                    {
+                                        "chat_type":"private", 
+                                        "user_id":"101",
+                                        "text":"/disable_post_for_user 101 312484 sale"
+                                    },
+                                    "101",
+                                    "312484",
+                                    "sale"
+                                )
+                            ],
+                            ids=[
+                                "failed_in_group",
+                                "invalid_message_format",
+                                "successfully_disabled_sale",
+                                "successfully_disabled_search",
+                                "invalid_post_type",
+                                 "non-admin"
+                                 ]
+                            )
+    async def test_disable_post_for_user(self, update_details, user_to_disable, game_id, post_type, mock_update, mocker):
+        """Checks if the right methods are called based on the message input"""
+        mock_update.effective_chat.type=update_details["chat_type"]
+        mock_update.message.from_user.id=update_details["user_id"]
+        mock_update.message.text=update_details["text"]
+
+        mock_disable_posts = mocker.patch("src.command_handlers.disable_posts")
+        admin_ids = mocker.patch("src.command_handlers.admin_ids", new=["102","103"])
+
+        await disable_post_for_user(mock_update, None)        
+
+        if user_to_disable is None or post_type not in ["sale", "search"] or game_id is None:
+            mock_update.message.reply_text.assert_called_once_with(INVALID_DISABLE_POST_FOR_USER)
+            return
+        if update_details["chat_type"]!="private":
+            mock_update.message.set_reaction.assert_called_once_with("👎")
+            return
+        if update_details["user_id"] not in admin_ids:
+            mock_update.message.reply_text.assert_called_once_with(INVALID_NOT_AN_ADMIN)
+            return
+        mock_disable_posts.assert_called_once_with(user_to_disable, post_type, game_id)
