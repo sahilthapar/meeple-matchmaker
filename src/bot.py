@@ -56,7 +56,7 @@ def init_app(auth_token):
     app.add_handler(MessageHandler(filters=None, callback=message_handler_with_client))
 
     # Run a daily cleanup at midnight in the bots default timezone
-    app.job_queue.run_daily(callback=cleanup_expired_posts,time=datetime.time(), chat_id=1243715567)
+    app.job_queue.run_daily(callback=cleanup_expired_posts,time=datetime.time())
 
     return app
 
