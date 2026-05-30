@@ -28,6 +28,12 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_clie
     :param _:
     :return:
     """
+    log.info(
+        "chat_id=%s type=%s title=%s",
+        update.effective_chat.id,
+        update.effective_chat.type,
+        update.effective_chat.title,
+    )
     # Check if message is a valid command before trying to hit the API
     post_type = find_post_type(update.message)
 
