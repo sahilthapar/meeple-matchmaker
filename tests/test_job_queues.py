@@ -95,11 +95,13 @@ class TestJobQueues:
         mock_game_1.game_name = "Terraforming Mars"
         mock_user_1 = MagicMock()
         mock_user_1.first_name = "Jacob"
+        mock_user_1.telegram_userid = 101
 
         mock_game_2 = MagicMock()
         mock_game_2.game_name = "Ark Nova"
         mock_user_2 = MagicMock()
         mock_user_2.first_name = "Henry"
+        mock_user_2.telegram_userid = 102
 
         mock_get_game.side_effect = [mock_game_1, mock_game_2]
         mock_get_user.side_effect = [mock_user_1, mock_user_2]
@@ -117,14 +119,14 @@ class TestJobQueues:
 
         # Verify the first call
         first_call = mock_context.bot.send_message.call_args_list[0]
-        assert first_call[1]["chat_id"] == "1294547458"
+        assert first_call[1]["chat_id"] == 101
         assert "Terraforming Mars" in first_call[1]["text"]
         assert "Jacob" in first_call[1]["text"]
         assert first_call[1]["parse_mode"] == "Markdown"
 
         # Verify the second call
         second_call = mock_context.bot.send_message.call_args_list[1]
-        assert second_call[1]["chat_id"] == "1294547458"
+        assert second_call[1]["chat_id"] == 102
         assert "Ark Nova" in second_call[1]["text"]
         assert "Henry" in second_call[1]["text"]
         assert second_call[1]["parse_mode"] == "Markdown"
@@ -270,6 +272,7 @@ class TestJobQueues:
         mock_game.game_name = "Lost Ruins of Arnak"
         mock_user = MagicMock()
         mock_user.first_name = "Sarah"
+        mock_user.telegram_userid = 999
 
         mock_get_game.return_value = mock_game
         mock_get_user.return_value = mock_user
@@ -283,5 +286,5 @@ class TestJobQueues:
 
         # Verify inform_user was called with correct parameters
         mock_inform_user.assert_called_once_with(
-            "Lost Ruins of Arnak", "1294547458", "Sarah", mock_context.bot.send_message
+            "Lost Ruins of Arnak", 999, "Sarah", mock_context.bot.send_message
         )
