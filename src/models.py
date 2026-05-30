@@ -1,17 +1,30 @@
 """Module providing ORM models for the entities used in meeple-matchmaker"""
+
 import datetime
 from peewee import SqliteDatabase, Model
-from peewee import AutoField, IntegerField, TextField, BooleanField, ForeignKeyField, DateTimeField
+from peewee import (
+    AutoField,
+    IntegerField,
+    TextField,
+    BooleanField,
+    ForeignKeyField,
+    DateTimeField,
+)
 
-db = SqliteDatabase(None, pragmas={
-    'cache_size': -64000,  # 64 MB page cache.
-    'foreign_keys': 1,  # Enforce FK constraints.
-})
+db = SqliteDatabase(
+    None,
+    pragmas={
+        "cache_size": -64000,  # 64 MB page cache.
+        "foreign_keys": 1,  # Enforce FK constraints.
+    },
+)
+
 
 class User(Model):
     """
     Represents a User
     """
+
     id = AutoField()
     telegram_userid = IntegerField(unique=True)
     first_name = TextField(null=True)
@@ -22,12 +35,14 @@ class User(Model):
 
     class Meta:
         database = db
-        table_name = 'user'
+        table_name = "user"
+
 
 class Game(Model):
     """
     Represents a BGG Game
     """
+
     id = AutoField()
     game_name = TextField(null=True)
     game_id = IntegerField(unique=True)
@@ -36,7 +51,8 @@ class Game(Model):
 
     class Meta:
         database = db
-        table_name = 'game'
+        table_name = "game"
+
 
 class Post(Model):
     """
@@ -46,6 +62,7 @@ class Post(Model):
     - user info
     - active status
     """
+
     id = AutoField()
     post_type = TextField()
     text = TextField()
@@ -56,12 +73,14 @@ class Post(Model):
 
     class Meta:
         database = db
-        table_name = 'user_post'
+        table_name = "user_post"
+
 
 class UserCollection(Model):
     """
     Represents a User's collection of games
     """
+
     id = AutoField()
     user = ForeignKeyField(User)
     game = ForeignKeyField(Game)
@@ -70,4 +89,4 @@ class UserCollection(Model):
 
     class Meta:
         database = db
-        table_name = 'user_collection'
+        table_name = "user_collection"

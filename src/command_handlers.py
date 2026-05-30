@@ -1,4 +1,5 @@
 """Handler for telegram bot commands"""
+
 import re
 import textwrap
 import logging
@@ -7,6 +8,7 @@ from itertools import chain
 from typing import Iterable, Generator
 from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
 from boardgamegeek.objects.games import CollectionBoardGame
+from src.constants import ADMIN_IDS
 from src.models import Post, UserCollection, Game
 from src.telegrampost import create_user_from_message, get_message_without_command
 from src.database import disable_posts, read_posts
@@ -17,15 +19,11 @@ from src.messages import (
     INVALID_ADD_BGG_USERNAME_ERROR,
     INVALID_ADD_BGG_USERNAME_NOT_FOUND,
     INVALID_ADD_BGG_USERNAME_SHOW_FORMAT,
-    MEEPLE_MATCHMAKER_START
-    )
+    MEEPLE_MATCHMAKER_START,
+)
+
 log = logging.getLogger("meeple-matchmaker")
 
-admin_ids = [
-    995823071, # Sahil Thapar
-    6946013582, # Mica
-    635786234, # Anshul J
-]
 
 def format_post(post: Post, bgg_client: BGGClient) -> str:
     """
@@ -48,8 +46,9 @@ def format_post(post: Post, bgg_client: BGGClient) -> str:
             log.error("BGGAPIError")
 
     # remove _ from game_name
-    game_name = game_name.replace('_', '')
+    game_name = game_name.replace("_", "")
     return f"{game_name}: [{user_name}](tg://user?id={user_id})"
+
 
 def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
     """
@@ -57,28 +56,37 @@ def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
     :param posts:
     :return:
     """
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
-    active_sales = [x for x in posts if x.post_type == 'sale']
-    active_searches = [x for x in posts if x.post_type == 'search']
+    bgg_client = BGGClient(
+        cache=CacheBackendMemory(ttl=3600 * 24 * 7),
+        access_token=os.getenv("BGG_BEARER"),
+    )
+    active_sales = [x for x in posts if x.post_type == "sale"]
+    active_searches = [x for x in posts if x.post_type == "search"]
 
     sale_count = len(active_sales)
     search_count = len(active_searches)
     max_count = max(sale_count, search_count)
     for i in range(0, max_count, 100):
-
         formatted_sales = ""
         formatted_searches = ""
 
         if active_sales:
             formatted_sales = "\nActive sales:\n" + "\n".join(
-                [format_post(x, bgg_client) for x in active_sales[i:min(i+100, sale_count)]]
+                [
+                    format_post(x, bgg_client)
+                    for x in active_sales[i : min(i + 100, sale_count)]
+                ]
             )
         if active_searches:
             formatted_searches = "\nActive searches:\n" + "\n".join(
-                [format_post(x, bgg_client) for x in active_searches[i:min(i+100, search_count)]]
+                [
+                    format_post(x, bgg_client)
+                    for x in active_searches[i : min(i + 100, search_count)]
+                ]
             )
         reply = f"{formatted_sales}\n{formatted_searches}"
         yield textwrap.dedent(reply)
+
 
 async def start_command(update, _):
     """
@@ -93,6 +101,7 @@ async def start_command(update, _):
     else:
         await update.message.reply_text(textwrap.dedent(reply), parse_mode="Markdown")
 
+
 async def disable_command(update, _):
     """
     Command handler to disable all active posts for a user
@@ -106,6 +115,7 @@ async def disable_command(update, _):
     else:
         user_id = update.message.from_user.id
         disable_posts(user_id=user_id)
+
 
 async def list_all_active_sales(update, _):
     """
@@ -123,6 +133,7 @@ async def list_all_active_sales(update, _):
         for part in reply:
             await update.message.reply_text(part, parse_mode="Markdown")
 
+
 async def list_all_active_searches(update, _):
     """
     Command handler to list all active searches currently being tracked by the bot
@@ -138,6 +149,7 @@ async def list_all_active_searches(update, _):
         reply = format_list_of_posts(data)
         for part in reply:
             await update.message.reply_text(part, parse_mode="Markdown")
+
 
 async def list_my_active_posts(update, _):
     """
@@ -155,6 +167,7 @@ async def list_my_active_posts(update, _):
         reply = format_list_of_posts(data)
         for part in reply:
             await update.message.reply_text(part, parse_mode="Markdown")
+
 
 async def add_bgg_username(update, _):
     """
@@ -181,10 +194,11 @@ def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
     Maps a BGG game status to a meeple-matchmaker post tag
     """
     if game.for_trade:
-        return 'sale'
+        return "sale"
 
     if game.want_to_buy or game.wishlist:
-        return 'search'
+        return "search"
+
 
 async def import_my_bgg_collection(update, _):
     """
@@ -209,7 +223,10 @@ async def import_my_bgg_collection(update, _):
 
             raise KeyError("No BGG username found! Please attach a BGG User")
 
-        bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600 * 24 * 7), access_token=os.getenv('BGG_BEARER'))
+        bgg_client = BGGClient(
+            cache=CacheBackendMemory(ttl=3600 * 24 * 7),
+            access_token=os.getenv("BGG_BEARER"),
+        )
         bgg_collection = bgg_client.collection(user_name=user.bgg_username)
 
         for item in bgg_collection.items:
@@ -223,29 +240,30 @@ async def import_my_bgg_collection(update, _):
             if not status:
                 continue
             user_collection, _ = UserCollection.get_or_create(
-                user=user,
-                game=game,
-                status=status
+                user=user, game=game, status=status
             )
             user_collection.save()
 
             post = Post.get_or_none(
-                post_type=user_collection.status,
-                user=user,
-                game=game,
-                active=True
+                post_type=user_collection.status, user=user, game=game, active=True
             )
             if not post:
-                log.info('inserting a %s post for %s into the table for user %s',status, game.game_name, user.first_name)
+                log.info(
+                    "inserting a %s post for %s into the table for user %s",
+                    status,
+                    game.game_name,
+                    user.first_name,
+                )
                 post = Post(
                     post_type=user_collection.status,
                     user=user,
                     game=game,
                     active=True,
-                    text="auto-generated from bgg-collection"
+                    text="auto-generated from bgg-collection",
                 )
                 post.save()
         await update.message.set_reaction("👍")
+
 
 async def match_me(update, _):
     """
@@ -261,22 +279,25 @@ async def match_me(update, _):
         return
     user = create_user_from_message(update.message)
     posts = read_posts(user_id=user.telegram_userid)
-    user_searches = [p for p in posts if p.post_type == 'search']
-    user_sales = [p for p in posts if p.post_type == 'sale']
+    user_searches = [p for p in posts if p.post_type == "search"]
+    user_sales = [p for p in posts if p.post_type == "sale"]
 
     matched_searches = []
     matched_sales = []
     if user_searches:
-        matched_searches = read_posts(game_id=[search.game.game_id for search in user_searches],
-                                      post_type='sale')
+        matched_searches = read_posts(
+            game_id=[search.game.game_id for search in user_searches], post_type="sale"
+        )
     if user_sales:
-        matched_sales = read_posts(game_id=[sale.game.game_id for sale in user_sales],
-                                   post_type='search')
+        matched_sales = read_posts(
+            game_id=[sale.game.game_id for sale in user_sales], post_type="search"
+        )
 
     reply_sales = format_list_of_posts(matched_searches)
     reply_searches = format_list_of_posts(matched_sales)
     for part in chain(reply_searches, reply_sales):
         await update.message.reply_text(part, parse_mode="Markdown")
+
 
 async def disable_user(update, _):
     """
@@ -290,7 +311,7 @@ async def disable_user(update, _):
         await update.message.set_reaction("👎")
         return
 
-    if update.message.from_user.id not in admin_ids:
+    if update.message.from_user.id not in ADMIN_IDS:
         await update.message.reply_text(INVALID_NOT_AN_ADMIN)
         return
     try:
@@ -307,6 +328,7 @@ async def disable_user(update, _):
         return
     await update.message.set_reaction("👍")
 
+
 async def disable_post_for_user(update, _):
     """
     Takes in a request to disable a specific post for a user
@@ -315,7 +337,7 @@ async def disable_post_for_user(update, _):
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
         return
-    if update.message.from_user.id not in admin_ids:
+    if update.message.from_user.id not in ADMIN_IDS:
         await update.message.reply_text(INVALID_NOT_AN_ADMIN)
         return
     try:

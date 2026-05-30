@@ -1,4 +1,5 @@
 """telegram bot handlers for specific message types"""
+
 import logging
 from typing import Optional
 
@@ -6,7 +7,12 @@ from telegram.ext import ContextTypes
 from telegram import Update
 from boardgamegeek import BGGClient  # type: ignore
 
-from src.telegrampost import parse_message, find_post_type, is_post_type_banned
+from src.telegrampost import (
+    format_user_tag,
+    parse_message,
+    find_post_type,
+    is_post_type_banned,
+)
 from src.database import read_posts, disable_posts
 from src.models import Post
 
@@ -17,10 +23,13 @@ COMPLEMENTARY_POST_TYPE = {
     "search": "sale",
     "sale": "search",
     "sold": "sale",
-    "found": "search"
+    "found": "search",
 }
 
-async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_client:BGGClient) -> None:
+
+async def message_handler(
+    update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_client: BGGClient
+) -> None:
     """
     Primary message handler which passes the message to specialized handler based on the post_type
     after parsing the message
@@ -41,15 +50,19 @@ async def message_handler(update: Update, _: ContextTypes.DEFAULT_TYPE, bgg_clie
         return
 
     log.info("Attempting to parse message")
-    post, game, user = parse_message(update.message, bgg_client) if update.message else (None, None, None)
+    post, game, user = (
+        parse_message(update.message, bgg_client)
+        if update.message
+        else (None, None, None)
+    )
     if not post or not game or not user:
         return
     if update.message:
-        if post.post_type == 'search' or post.post_type == 'sale':
+        if post.post_type == "search" or post.post_type == "sale":
             reply = find_matching_posts(post)
             if reply:
-                await update.message.reply_text(reply, parse_mode='Markdown')
-        elif post.post_type == 'sold' or post.post_type == 'found':
+                await update.message.reply_text(reply, parse_mode="Markdown")
+        elif post.post_type == "sold" or post.post_type == "found":
             disable_post(post)
 
     if post.game:
@@ -62,15 +75,16 @@ def find_matching_posts(post: Post) -> Optional[str]:
     :param post:
     :return:
     """
-    def _format_user_tag(username, userid):
-        return f'[{username}](tg://user?id={userid})'
 
     post_type = COMPLEMENTARY_POST_TYPE.get(post.post_type)
     posts = read_posts(game_id=post.game.game_id, post_type=post_type)
     if posts:
-        return ', '.join([
-            _format_user_tag(post.user.first_name, post.user.telegram_userid) for post in posts
-        ])
+        return ", ".join(
+            [
+                format_user_tag(post.user.first_name, post.user.telegram_userid)
+                for post in posts
+            ]
+        )
     return None
 
 
@@ -85,5 +99,5 @@ def disable_post(post: Post) -> None:
     disable_posts(
         user_id=post.user.telegram_userid,
         post_type=comp_post_type,
-        game_id=post.game.game_id
+        game_id=post.game.game_id,
     )

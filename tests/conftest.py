@@ -1,8 +1,10 @@
 """Module for intialising the database and other possible test configurations"""
+
 import asyncio
 import pytest
 from src.models import db, User, Game, Post, UserCollection
 from tests.helpers import MockBGGClient
+
 
 @pytest.fixture(name="database")
 def database():
@@ -14,10 +16,12 @@ def database():
     db.drop_tables([User, Game, Post, UserCollection])
     db.close()
 
+
 @pytest.fixture(name="bgg_client")
 def bgg_client():
     """Fixture that can be used to replace bgg_client with a mock eventually"""
     return MockBGGClient()
+
 
 @pytest.fixture(name="mock_update")
 def mock_update(mocker):
@@ -32,7 +36,7 @@ def mock_update(mocker):
         asyncio.set_event_loop(loop)
 
     f = asyncio.Future()
-    f.set_result('text')
+    f.set_result("text")
     update.message.reply_text.return_value = f
     update.message.set_reaction.return_value = f
 
