@@ -6,7 +6,7 @@ import logging
 import os
 from boardgamegeek import BGGClient, CacheBackendMemory  # type: ignore
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
-from src.job_queues import cleanup_expired_posts
+from src.job_queues import cleanup_expired_posts, generate_daily_summary
 from src.message_handlers import message_handler
 from src.command_handlers import (
     start_command,
@@ -56,8 +56,9 @@ def init_app(auth_token):
     app.add_handler(MessageHandler(filters=None, callback=message_handler_with_client))
 
     # Run a daily cleanup at midnight in the bots default timezone
-    app.job_queue.run_daily(callback=cleanup_expired_posts,time=datetime.time())
+    # app.job_queue.run_daily(callback=cleanup_expired_posts,time=datetime.time())
 
+    app.job_queue.run_repeating(callback=generate_daily_summary, interval=20)
     return app
 
 
