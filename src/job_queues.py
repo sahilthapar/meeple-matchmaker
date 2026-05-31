@@ -3,11 +3,7 @@
 import datetime
 import logging
 from src.constants import SALE_EXPIRY_DAYS
-from src.database import (
-    update_and_get_stale_posts,
-    get_game_from_post,
-    get_user_from_post,
-)
+from src.database import update_and_get_stale_posts
 from src.messages import generate_stale_post_message
 
 log = logging.getLogger("meeple-matchmaker")
@@ -17,7 +13,7 @@ async def cleanup_expired_posts(context):
     """
     Job Queue that when executed, disables all sale posts older than SALE_EXPIRY_DAYS from today.
     """
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_time = now - datetime.timedelta(days=SALE_EXPIRY_DAYS)
 
     updated_rows = update_and_get_stale_posts(cutoff_time)
@@ -28,14 +24,18 @@ async def cleanup_expired_posts(context):
 
     # Iterate through the updated rows to send a DM to each person who has posted
     for post in updated_rows:
-        game_name_from_post = get_game_from_post(post).game_name
-        user_from_post = get_user_from_post(post)
-        await inform_user(
-            game_name_from_post,
-            user_from_post.telegram_userid,
-            user_from_post.first_name,
-            context.bot.send_message,
-        )
+        try:
+            game_name_from_post = post.game.game_name
+            user_from_post = post.user
+            await inform_user(
+                game_name_from_post,
+                user_from_post.telegram_userid,
+                user_from_post.first_name,
+                context.bot.send_message,
+            )
+        except Exception as e:
+            log.error("Failed to send expiry notification to user %d for game %s: %s"
+            , post.user.telegram_userid, post.game.game_name, e)
 
 
 async def inform_user(game_name: str, user_id, user_name: str, send_message):

@@ -40,8 +40,8 @@ class TestJobQueues:
             game.save()
 
         # Create stale sale posts (older than SALE_EXPIRY_DAYS)
-        old_date = datetime.datetime.now() - timedelta(days=SALE_EXPIRY_DAYS + 10)
-        recent_date = datetime.datetime.now() - timedelta(days=SALE_EXPIRY_DAYS - 10)
+        old_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS + 10)
+        recent_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS - 10)
 
         stale_post_1 = Post(
             post_type="sale",
@@ -81,8 +81,6 @@ class TestJobQueues:
         """Tests cleanup_expired_posts disables stale posts and sends messages to users"""
         # Mock the database functions
         mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")
-        mock_get_game = mocker.patch("src.job_queues.get_game_from_post")
-        mock_get_user = mocker.patch("src.job_queues.get_user_from_post")
 
         # Create mock post objects
         mock_post_1 = MagicMock()
@@ -103,8 +101,11 @@ class TestJobQueues:
         mock_user_2.first_name = "Henry"
         mock_user_2.telegram_userid = 102
 
-        mock_get_game.side_effect = [mock_game_1, mock_game_2]
-        mock_get_user.side_effect = [mock_user_1, mock_user_2]
+        # Assign game and user to each post
+        mock_post_1.game = mock_game_1
+        mock_post_1.user = mock_user_1
+        mock_post_2.game = mock_game_2
+        mock_post_2.user = mock_user_2
 
         # Execute the job
         await cleanup_expired_posts(mock_context)
@@ -159,7 +160,7 @@ class TestJobQueues:
         mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")
         mock_update.return_value = []
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         await cleanup_expired_posts(mock_context)
 
@@ -257,8 +258,6 @@ class TestJobQueues:
         """Tests cleanup_expired_posts calls inform_user with correct game and user information"""
         # Mock database functions
         mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")
-        mock_get_game = mocker.patch("src.job_queues.get_game_from_post")
-        mock_get_user = mocker.patch("src.job_queues.get_user_from_post")
         mock_inform_user = mocker.patch(
             "src.job_queues.inform_user", new_callable=AsyncMock
         )
@@ -274,17 +273,68 @@ class TestJobQueues:
         mock_user.first_name = "Sarah"
         mock_user.telegram_userid = 999
 
-        mock_get_game.return_value = mock_game
-        mock_get_user.return_value = mock_user
+        # Assign game and user to post
+        mock_post.game = mock_game
+        mock_post.user = mock_user
 
         # Execute the job
         await cleanup_expired_posts(mock_context)
-
-        # Verify the game and user were retrieved correctly
-        assert mock_get_game.called
-        assert mock_get_user.called
 
         # Verify inform_user was called with correct parameters
         mock_inform_user.assert_called_once_with(
             "Lost Ruins of Arnak", 999, "Sarah", mock_context.bot.send_message
         )
+
+    @pytest.mark.asyncio
+    async def test_cleanup_expired_posts_continues_on_error(
+        self, mock_context, mocker
+    ):
+        """Tests cleanup_expired_posts continues processing posts even when inform_user fails"""
+        # Mock database functions
+        mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")
+        mock_inform_user = mocker.patch(
+            "src.job_queues.inform_user", new_callable=AsyncMock
+        )
+        mock_log_error = mocker.patch("src.job_queues.log.error")
+
+        # Create two mock posts
+        mock_post_1 = MagicMock()
+        mock_post_2 = MagicMock()
+        mock_update.return_value = [mock_post_1, mock_post_2]
+
+        # Create mock game and user for each post
+        mock_game_1 = MagicMock()
+        mock_game_1.game_name = "Catan"
+        mock_user_1 = MagicMock()
+        mock_user_1.first_name = "Alice"
+        mock_user_1.telegram_userid = 111
+
+        mock_game_2 = MagicMock()
+        mock_game_2.game_name = "Ticket to Ride"
+        mock_user_2 = MagicMock()
+        mock_user_2.first_name = "Bob"
+        mock_user_2.telegram_userid = 222
+
+        # Assign game and user to each post
+        mock_post_1.game = mock_game_1
+        mock_post_1.user = mock_user_1
+        mock_post_2.game = mock_game_2
+        mock_post_2.user = mock_user_2
+
+        # Make inform_user raise an exception for the first post
+        mock_inform_user.side_effect = [
+            Exception("User has blocked the bot"),
+            None,  # Second call succeeds
+        ]
+
+        # Execute the job
+        await cleanup_expired_posts(mock_context)
+
+        # Verify inform_user was called twice despite the first call failing
+        assert mock_inform_user.call_count == 2
+
+        # Verify logging.error was called for the failed post
+        assert mock_log_error.called
+        error_call_args = mock_log_error.call_args[0]
+        assert "111" in str(error_call_args[1])  # User ID
+        assert "Catan" in str(error_call_args[2])  # Game name

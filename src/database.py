@@ -89,13 +89,5 @@ def update_and_get_stale_posts(cutoff_time):
             & (Post.active == True)  # noqa: E712
             & (Post.post_type == "sale")
         )
-        .returning(Post)
+        .returning(Post).execute()
     )
-
-
-def get_game_from_post(post: Post) -> Game:
-    return Game.get_by_id(post.game)
-
-
-def get_user_from_post(post: Post) -> User:
-    return User.get_by_id(post.user)

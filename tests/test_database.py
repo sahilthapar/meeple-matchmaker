@@ -6,8 +6,6 @@ from src.database import (
     read_posts,
     disable_posts,
     update_and_get_stale_posts,
-    get_game_from_post,
-    get_user_from_post,
 )
 from src.models import User, Game, Post
 
@@ -203,16 +201,12 @@ class TestDatabase:
         assert posts == expected_data
 
     def test_update_and_get_stale_posts(self, database):
-        """Tests updating stale posts for user ID 23"""
-        # The function hardcodes user ID 23, so we need to create posts for that specific user ID
-        # First, find what user ID will actually be 23 or create exactly what the function expects
-
-        # Create users in order - the first two created will have IDs that depend on the database
-        user_23 = User(telegram_userid=23, first_name="User23")
-        user_23.save()
-
-        other_user = User(telegram_userid=24, first_name="OtherUser")
-        other_user.save()
+        """Tests updating stale posts to mark them as inactive based on age"""
+        # Create users
+        user1 = User(telegram_userid=201, first_name="User1")
+        user2 = User(telegram_userid=202, first_name="User2")
+        user1.save()
+        user2.save()
 
         # Create games
         game1 = Game(game_id=1001, game_name="Game1")
@@ -225,148 +219,62 @@ class TestDatabase:
         old_time = cutoff_time - timedelta(days=1)
         recent_time = datetime.now()
 
-        # Only create old stale sale post for the user that will have ID 23
-        # The function checks for Post.user == 23, which is the primary key ID
-        if user_23.id == 23:
-            # Old stale sale post by user with ID 23 (should be updated)
-            old_post_user23 = Post(
-                post_type="sale",
-                text="#sell old game",
-                active=True,
-                user=user_23,
-                game=game1,
-                updated_at=old_time,
-            )
-            old_post_user23.save()
-
-            # Recent sale post by same user (should NOT be updated)
-            recent_post_user23 = Post(
-                post_type="sale",
-                text="#sell recent game",
-                active=True,
-                user=user_23,
-                game=game2,
-                updated_at=recent_time,
-            )
-            recent_post_user23.save()
-
-            # Old search post by user 23 (should NOT be updated - only sales)
-            old_search_post = Post(
-                post_type="search",
-                text="#looking for old game",
-                active=True,
-                user=user_23,
-                game=game1,
-                updated_at=old_time,
-            )
-            old_search_post.save()
-
-            # Execute the update
-            update_and_get_stale_posts(cutoff_time)
-
-            # Assertions - verify the post was updated to inactive
-            old_post_user23_updated = Post.get_by_id(old_post_user23.id)
-            assert old_post_user23_updated.active == False
-
-            # Verify other posts remain active
-            recent_post_user23_updated = Post.get_by_id(recent_post_user23.id)
-            assert recent_post_user23_updated.active == True
-
-            old_search_post_updated = Post.get_by_id(old_search_post.id)
-            assert old_search_post_updated.active == True
-        else:
-            # If the user doesn't have ID 23, just verify the function doesn't crash
-            # and that no posts are updated (since the function only updates user ID 23)
-            old_post = Post(
-                post_type="sale",
-                text="#sell",
-                active=True,
-                user=user_23,
-                game=game1,
-                updated_at=old_time,
-            )
-            old_post.save()
-
-            update_and_get_stale_posts(cutoff_time)
-
-            old_post_updated = Post.get_by_id(old_post.id)
-            # Post should remain active because user doesn't have ID 23
-            assert old_post_updated.active == True
-
-    def test_get_game_from_post(self, sample_posts):
-        """Tests retrieving a game from a post"""
-        # Create a test post directly
-        jacob = User.get(telegram_userid=101)
-        tfm = Game.get(game_id=167791)
-        post = Post.get(Post.user == jacob, Post.game == tfm)
-
-        # Get the game from the post
-        game = get_game_from_post(post)
-
-        # Assertions
-        assert isinstance(game, Game)
-        assert game.id == tfm.id
-        assert game.game_id == 167791
-        assert game.game_name == "Terraforming Mars"
-
-    def test_get_game_from_post_returns_correct_game(self, database):
-        """Tests that get_game_from_post returns the correct specific game"""
-        # Create test data
-        user = User(telegram_userid=201, first_name="TestUser")
-        user.save()
-
-        game1 = Game(game_id=2001, game_name="Game One")
-        game2 = Game(game_id=2002, game_name="Game Two")
-        game1.save()
-        game2.save()
-
-        post = Post(post_type="sale", text="#sell", active=True, user=user, game=game1)
-        post.save()
-
-        # Test get_game_from_post
-        retrieved_game = get_game_from_post(post)
-
-        assert retrieved_game.id == game1.id
-        assert retrieved_game.game_id == 2001
-        assert retrieved_game.game_name == "Game One"
-        assert retrieved_game.id != game2.id
-
-    def test_get_user_from_post(self, sample_posts):
-        """Tests retrieving a user from a post"""
-        # Create a test post directly
-        jacob = User.get(telegram_userid=101)
-        tfm = Game.get(game_id=167791)
-        post = Post.get(Post.user == jacob, Post.game == tfm)
-
-        # Get the user from the post
-        user = get_user_from_post(post)
-
-        # Assertions
-        assert isinstance(user, User)
-        assert user.id == jacob.id
-        assert user.telegram_userid == 101
-        assert user.first_name == "Jacob"
-
-    def test_get_user_from_post_returns_correct_user(self, database):
-        """Tests that get_user_from_post returns the correct specific user"""
-        # Create test data
-        user1 = User(telegram_userid=301, first_name="User One")
-        user2 = User(telegram_userid=302, first_name="User Two")
-        user1.save()
-        user2.save()
-
-        game = Game(game_id=3001, game_name="Test Game")
-        game.save()
-
-        post = Post(
-            post_type="search", text="#looking", active=True, user=user1, game=game
+        # Old stale sale post (should be updated to inactive)
+        old_stale_sale = Post(
+            post_type="sale",
+            text="#sell old game",
+            active=True,
+            user=user1,
+            game=game1,
+            updated_at=old_time,
         )
-        post.save()
+        old_stale_sale.save()
 
-        # Test get_user_from_post
-        retrieved_user = get_user_from_post(post)
+        # Recent sale post (should remain active)
+        recent_sale = Post(
+            post_type="sale",
+            text="#sell recent game",
+            active=True,
+            user=user1,
+            game=game2,
+            updated_at=recent_time,
+        )
+        recent_sale.save()
 
-        assert retrieved_user.id == user1.id
-        assert retrieved_user.telegram_userid == 301
-        assert retrieved_user.first_name == "User One"
-        assert retrieved_user.id != user2.id
+        # Old search post (should remain active - only sales are marked stale)
+        old_search = Post(
+            post_type="search",
+            text="#looking for old game",
+            active=True,
+            user=user2,
+            game=game1,
+            updated_at=old_time,
+        )
+        old_search.save()
+
+        # Old inactive sale post (should remain inactive)
+        old_inactive_sale = Post(
+            post_type="sale",
+            text="#sell old inactive",
+            active=False,
+            user=user2,
+            game=game2,
+            updated_at=old_time,
+        )
+        old_inactive_sale.save()
+
+        # Execute the update
+        update_and_get_stale_posts(cutoff_time)
+
+        # Assertions
+        old_stale_sale_updated = Post.get_by_id(old_stale_sale.id)
+        assert old_stale_sale_updated.active == False
+
+        recent_sale_updated = Post.get_by_id(recent_sale.id)
+        assert recent_sale_updated.active == True
+
+        old_search_updated = Post.get_by_id(old_search.id)
+        assert old_search_updated.active == True
+
+        old_inactive_sale_updated = Post.get_by_id(old_inactive_sale.id)
+        assert old_inactive_sale_updated.active == False
