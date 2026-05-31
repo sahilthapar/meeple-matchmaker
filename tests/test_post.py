@@ -1,12 +1,25 @@
 """Tests all telegram post helper functionality"""
+
 import pytest
-from src.telegrampost import (parse_tag, TYPE_LOOKUP, parse_game_name, parse_message,
-                              get_game_details, get_message_contents, get_message_without_command, is_post_type_banned, find_post_type)
+from src.telegrampost import (
+    format_user_tag,
+    parse_tag,
+    TYPE_LOOKUP,
+    parse_game_name,
+    parse_message,
+    get_game_details,
+    get_message_contents,
+    get_message_without_command,
+    is_post_type_banned,
+    find_post_type,
+)
 
 from src.models import Post, Game, User
 
+
 class TestMessageParsing:
     """Contains all the test cases for telegrampost.py"""
+
     @pytest.fixture(name="mock_message")
     def mock_message(self, mocker):
         """Mocks a telegram message entity"""
@@ -17,11 +30,9 @@ class TestMessageParsing:
         argvalues=[
             ("text", "#lookingfor Ark Nova"),
             ("image", "#lookingfor Ark Nova"),
-            ("video", "#lookingfor Ark Nova")
+            ("video", "#lookingfor Ark Nova"),
         ],
-        ids=[
-            "text", "image", "video"
-        ]
+        ids=["text", "image", "video"],
     )
     def test_get_message_contents(self, mock_message, msg_type, msg_contents):
         if msg_type == "text":
@@ -47,9 +58,16 @@ class TestMessageParsing:
             ("#looking Ark Nova", "#looking"),
         ],
         ids=[
-            "search", "sale", "sale-selling", "sale-sell",
-            "sold", "found", "sale-auction", "search-iso", "search-looking"
-        ]
+            "search",
+            "sale",
+            "sale-selling",
+            "sale-sell",
+            "sold",
+            "found",
+            "sale-auction",
+            "search-iso",
+            "search-looking",
+        ],
     )
     def test_parse_tag(self, message, expected):
         assert parse_tag(message) == expected
@@ -77,7 +95,7 @@ class TestMessageParsing:
             "iso",
             "looking",
             "auction",
-        ]
+        ],
     )
     def test_type_lookup(self, tag, expected):
         assert TYPE_LOOKUP[tag] == expected
@@ -91,7 +109,7 @@ class TestMessageParsing:
                 """
                 monopoly
                 """,
-                "monopoly"
+                "monopoly",
             ),
             (
                 """
@@ -99,7 +117,7 @@ class TestMessageParsing:
                 
                 condition: good
                 """,
-                "monopoly"
+                "monopoly",
             ),
             (
                 """
@@ -108,20 +126,20 @@ class TestMessageParsing:
                 
                 location: Delhi/NCR
                 """,
-                "monopoly"
+                "monopoly",
             ),
             (
                 """
                 game: kanban ev
                 """,
-                "kanban ev"
+                "kanban ev",
             ),
             (
                 """
                 game name: kanban ev
                 """,
-                "kanban ev"
-            )
+                "kanban ev",
+            ),
         ],
         ids=[
             "single-line",
@@ -130,10 +148,8 @@ class TestMessageParsing:
             "mutliline-with-condition",
             "multiline-with-more-details-and-links",
             "multiline-with-keyword-game",
-            "mutliline-with-keyword-game-name"
-            ""
-        ]
-
+            "mutliline-with-keyword-game-name" "",
+        ],
     )
     def test_parse_game_name(self, message, expected):
         assert parse_game_name(message) == expected
@@ -146,19 +162,20 @@ class TestMessageParsing:
             ("guild of merchant explorers", 350933, "The Guild of Merchant Explorers"),
             ("lost ruins of arnak", 312484, "Lost Ruins of Arnak"),
             ("just a #message no game", None, None),
-            ("Moopoly", 1406, "Monopoly")
+            ("Moopoly", 1406, "Monopoly"),
         ],
         ids=[
-            "monopoly", 
-            "TfM", 
-            "Guild of Merchant Explorers", 
-            "Arnak", 
-            "not-a-valid-game", 
+            "monopoly",
+            "TfM",
+            "Guild of Merchant Explorers",
+            "Arnak",
+            "not-a-valid-game",
             "fuzzy-search",
-        ]
-
+        ],
     )
-    def test_get_game(self, bgg_client, database, game_name, expected_game_id, expected_game_name):
+    def test_get_game(
+        self, bgg_client, database, game_name, expected_game_id, expected_game_name
+    ):
         game = get_game_details(game_name, bgg_client)
         if not expected_game_id:
             assert game is None
@@ -170,17 +187,36 @@ class TestMessageParsing:
         argnames="message, user_id, expected_type, expected_game_id, expected_game_name",
         argvalues=[
             ("#lOokingFor monopoly", 101, "search", 1406, "Monopoly"),
-            ("#sale Guild of Merchant Explorers", 103, "sale", 350933, "The Guild of Merchant Explorers"),
-            ("#selling Lost Ruins of Arnak", 104, "sale", 312484, "Lost Ruins of Arnak"),
+            (
+                "#sale Guild of Merchant Explorers",
+                103,
+                "sale",
+                350933,
+                "The Guild of Merchant Explorers",
+            ),
+            (
+                "#selling Lost Ruins of Arnak",
+                104,
+                "sale",
+                312484,
+                "Lost Ruins of Arnak",
+            ),
             ("just a #message no game", 105, "post", None, None),
             ("#selling LEGO Set", 104, None, None, None),
         ],
-        ids=[
-            "search", "sale", "sale-selling", "no-type", "no-game"
-        ]
-
+        ids=["search", "sale", "sale-selling", "no-type", "no-game"],
     )
-    def test_parse_message(self, mock_message, database, message, user_id, expected_type, expected_game_id, expected_game_name, bgg_client):
+    def test_parse_message(
+        self,
+        mock_message,
+        database,
+        message,
+        user_id,
+        expected_type,
+        expected_game_id,
+        expected_game_name,
+        bgg_client,
+    ):
         mock_message.text = message
         mock_message.from_user.id = user_id
         mock_message.from_user.first_name = str(user_id * 100)
@@ -220,14 +256,14 @@ class TestMessageParsing:
         argnames="message,bgg_username",
         argvalues=[
             ("#add_bgg_username sahilrhapar", "sahilrhapar"),
-            ("/add_bgg_username sahilrhapar", "sahilrhapar")
+            ("/add_bgg_username sahilrhapar", "sahilrhapar"),
         ],
-        ids=["hashtag", "slash"]
+        ids=["hashtag", "slash"],
     )
     def test_get_message_without_command(self, mock_message, message, bgg_username):
         mock_message.text = message
         assert get_message_without_command(mock_message) == bgg_username
-    
+
     @pytest.mark.parametrize(
         argnames="message, post_type",
         argvalues=[
@@ -237,7 +273,7 @@ class TestMessageParsing:
             ("#auction The White Castle", "sale"),
             ("#found The White Castle", "found"),
             ("#lookingfor The White Castle", "search"),
-        ]
+        ],
     )
     def test_find_post_type(self, mock_message, message, post_type):
         """Test if the function returns the correct post type for a specific message"""
@@ -245,18 +281,26 @@ class TestMessageParsing:
         assert find_post_type(mock_message) == post_type
 
     @pytest.mark.parametrize(
-            argnames = "post, banned",
-            argvalues = [
-                ({"type":"sale","chat_type":"private"}, True),
-                ({"type":"sale","chat_type":"group"}, False),
-                ({"type":"found","chat_type":"private"}, False),
-                ({"type":"found","chat_type":"group"}, True),
-                ({"type":"search","chat_type":"private"}, False),
-                ({"type":"search","chat_type":"group"}, False),
-                ({"type":"sold","chat_type":"private"}, False),
-                ({"type":"sold","chat_type":"group"}, False),
-                ]
-            )
+        argnames="post, banned",
+        argvalues=[
+            ({"type": "sale", "chat_type": "private"}, True),
+            ({"type": "sale", "chat_type": "group"}, False),
+            ({"type": "found", "chat_type": "private"}, False),
+            ({"type": "found", "chat_type": "group"}, True),
+            ({"type": "search", "chat_type": "private"}, False),
+            ({"type": "search", "chat_type": "group"}, False),
+            ({"type": "sold", "chat_type": "private"}, False),
+            ({"type": "sold", "chat_type": "group"}, False),
+        ],
+    )
     def test_is_post_type_banned(self, post, banned):
         """Test if the function returns the correct boolean for a specific post type"""
-        assert is_post_type_banned(post['type'], post['chat_type']) is banned
+        assert is_post_type_banned(post["type"], post["chat_type"]) is banned
+
+    @pytest.mark.parametrize(
+        argnames="username, user_id, expected",
+        argvalues=[("John", "123", "[John](tg://user?id=123)")],
+    )
+    def test_format_user_tag(self, username, user_id, expected):
+        """Test if the function returns the correct markdown for a given user"""
+        assert format_user_tag(username=username, userid=user_id) == expected

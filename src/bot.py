@@ -1,13 +1,24 @@
 """Entry point for telegram bot"""
+
+import datetime
 import json
 import logging
 import os
 from boardgamegeek import BGGClient, CacheBackendMemory  # type: ignore
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler
+from src.job_queues import cleanup_expired_posts
 from src.message_handlers import message_handler
 from src.command_handlers import (
-    start_command, disable_command, list_all_active_sales, list_all_active_searches, list_my_active_posts,
-    add_bgg_username, disable_user, import_my_bgg_collection, match_me, disable_post_for_user
+    start_command,
+    disable_command,
+    list_all_active_sales,
+    list_all_active_searches,
+    list_my_active_posts,
+    add_bgg_username,
+    disable_user,
+    import_my_bgg_collection,
+    match_me,
+    disable_post_for_user,
 )
 from src.models import db
 from src.database import init_tables
@@ -15,6 +26,7 @@ from src.database import init_tables
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("meeple-matchmaker")
+
 
 def init_app(auth_token):
     """Sets up the telegram app with command and message handlers"""
@@ -33,7 +45,9 @@ def init_app(auth_token):
     app.add_handler(CommandHandler("add_bgg_username", add_bgg_username))
     app.add_handler(CommandHandler("disable_user", disable_user))
     app.add_handler(CommandHandler("disable_post_for_user", disable_post_for_user))
-    app.add_handler(CommandHandler("import_my_bgg_collection", import_my_bgg_collection))
+    app.add_handler(
+        CommandHandler("import_my_bgg_collection", import_my_bgg_collection)
+    )
     app.add_handler(CommandHandler("match_me", match_me))
 
     # Generate the message handler with the bgg client so bgg_client doesn't get re-initialised on each message
@@ -41,19 +55,27 @@ def init_app(auth_token):
     # message handlers
     app.add_handler(MessageHandler(filters=None, callback=message_handler_with_client))
 
+    # Run a daily cleanup at midnight in the bots default timezone
+    app.job_queue.run_daily(callback=cleanup_expired_posts,time=datetime.time())
+
     return app
+
 
 def init_message_handler():
     """Returns the message handler with the bgg_client injected. Allows easier testing"""
-    bgg_client = BGGClient(cache=CacheBackendMemory(ttl=3600*24*7), access_token=os.getenv('BGG_BEARER'))
+    bgg_client = BGGClient(
+        cache=CacheBackendMemory(ttl=3600 * 24 * 7),
+        access_token=os.getenv("BGG_BEARER"),
+    )
 
-    async def handler(update,context):
-        await message_handler(update,context,bgg_client)
+    async def handler(update, context):
+        await message_handler(update, context, bgg_client)
 
     return handler
 
+
 if __name__ == "__main__":
-    with open('auth.json', mode="r", encoding="utf-8") as f:
+    with open("auth.json", mode="r", encoding="utf-8") as f:
         token = json.load(f)["TOKEN"]
         meeple_app = init_app(token)
         log.info("Bot is ready!")

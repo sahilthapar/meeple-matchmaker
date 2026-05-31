@@ -1,4 +1,4 @@
-""" Module to interact with the database """
+"""Module to interact with the database"""
 
 from typing import Optional, Iterable, Union
 import operator
@@ -14,11 +14,12 @@ def init_tables(db: SqliteDatabase) -> None:
     """
     db.create_tables([Post, User, Game, UserCollection])
 
+
 def read_posts(
-        user_id: Optional[int] = None,
-        post_type: Optional[str] = None,
-        game_id: Optional[Union[int, list[int]]] = None,
-        is_active: Optional[bool] = True
+    user_id: Optional[int] = None,
+    post_type: Optional[str] = None,
+    game_id: Optional[Union[int, list[int]]] = None,
+    is_active: Optional[bool] = True,
 ) -> Iterable[Post]:
     """
     Gets posts from the database.
@@ -39,26 +40,36 @@ def read_posts(
 
         clauses.append((Post.game.in_(games)))
 
-    data = Post\
-        .select(Post.post_type, Post.user, Post.game, Post.active, Game.game_id, Game.game_name, User.first_name, User.telegram_userid)\
-        .join(Game, on=Post.game == Game.id)\
-        .join(User, on=Post.user == User.id) \
-        .where(reduce(operator.and_, clauses)) \
-        .order_by(Post.post_type, Game.game_name, User.first_name) \
+    data = (
+        Post.select(
+            Post.post_type,
+            Post.user,
+            Post.game,
+            Post.active,
+            Game.game_id,
+            Game.game_name,
+            User.first_name,
+            User.telegram_userid,
+        )
+        .join(Game, on=Post.game == Game.id)
+        .join(User, on=Post.user == User.id)
+        .where(reduce(operator.and_, clauses))
+        .order_by(Post.post_type, Game.game_name, User.first_name)
         .distinct()
+    )
     return data.execute()
 
 
-def disable_posts(user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None) -> None:
+def disable_posts(
+    user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None
+) -> None:
     """
     Disables posts in the database.
     Can disable specific posts based on parameters.
     """
     user = User.get(telegram_userid=user_id)
 
-    clauses = [
-        (Post.user == user)
-    ]
+    clauses = [(Post.user == user)]
 
     if game_id:
         game = Game.get(game_id=game_id)
@@ -68,3 +79,15 @@ def disable_posts(user_id: int, post_type: Optional[str] = None, game_id: Option
         clauses.append((Post.post_type == post_type))
 
     Post.update(active=False).where(reduce(operator.and_, clauses)).execute()
+
+
+def update_and_get_stale_posts(cutoff_time):
+    return (
+        Post.update(active=False)
+        .where(
+            (Post.updated_at < cutoff_time)
+            & (Post.active == True)  # noqa: E712
+            & (Post.post_type == "sale")
+        )
+        .returning(Post).execute()
+    )

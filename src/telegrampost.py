@@ -24,37 +24,37 @@ TYPE_LOOKUP = {
     "#found": "found",
 }
 
-POST_TYPES_BANNED_IN_DM = [
-    "sale"
-]
+POST_TYPES_BANNED_IN_DM = ["sale"]
 
-POST_TYPES_BANNED_IN_GROUP = [
-    "found"
-]
+POST_TYPES_BANNED_IN_GROUP = ["found"]
+
 
 def get_message_contents(message: Message) -> str:
     """Extract the text or caption from a message"""
     text = message.text or message.caption
     return text.lower() if text else ""
 
+
 def parse_tag(message: str) -> str:
     """Extracts the tag used in the message"""
     tag = re.search(
         pattern="^#lookingfor|^#iso|^#looking|^#sale|^#selling|^#sell|^#auction|^#sold|^#found",
-        string=message
+        string=message,
     )
     if not tag:
         return ""
     return tag.group()
+
 
 def parse_game_name(message: str) -> str:
     """Performs string replacement (if required) and returns the game name as typed by the user"""
     first_line = message.strip().split("\n")[0]
     return first_line.replace("game name:", "").replace("game:", "").strip()
 
+
 def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     """
-    Uses the BGG Client to fetch a game based on its name. 
+    Uses the BGG Client to fetch a game based on its name.
     If found, checks the DB for an existing entry, otherwise creates the game and returns the model.
     """
     try:
@@ -64,8 +64,7 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
         if game_exact:
             log.info("Found exact match")
             game, _ = Game.get_or_create(
-                game_name=game_exact.name,
-                game_id=game_exact.id
+                game_name=game_exact.name, game_id=game_exact.id
             )
             return game
     except BGGItemNotFoundError:
@@ -75,13 +74,13 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
             if game_fuzzy:
                 log.info("Found fuzzy match")
                 game, _ = Game.get_or_create(
-                    game_name=game_fuzzy.name,
-                    game_id=game_fuzzy.id
+                    game_name=game_fuzzy.name, game_id=game_fuzzy.id
                 )
                 return game
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return
+
 
 def create_user_from_message(message: Message) -> User:
     """
@@ -89,20 +88,22 @@ def create_user_from_message(message: Message) -> User:
     :param message:
     :return:
     """
-    user, _ = User.get_or_create(
-        telegram_userid=message.from_user.id
-    )
+    user, _ = User.get_or_create(telegram_userid=message.from_user.id)
     user.first_name = message.from_user.first_name
     user.last_name = message.from_user.last_name
 
     return user
+
 
 def get_message_without_command(message: Message) -> str:
     """Extracts the message text by deleting the first word (usually a commmand)"""
     text = get_message_contents(message)
     return text.split(" ")[1]
 
-def parse_message(message: Message, bgg_client) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
+
+def parse_message(
+    message: Message, bgg_client
+) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
     """
     Parses a telegram message to find details about game, user and the message
     returns ORM for Post, Game, User
@@ -131,17 +132,14 @@ def parse_message(message: Message, bgg_client) -> Tuple[Optional[Post], Optiona
         return None, None, None
 
     post = Post(
-        post_type=message_type,
-        text=message_text,
-        active=1,
-        user=user,
-        game=game
+        post_type=message_type, text=message_text, active=1, user=user, game=game
     )
     game.save()
     user.save()
     post.save()
 
     return post, game, user
+
 
 def find_post_type(message: Message) -> Optional[str]:
     """
@@ -153,10 +151,15 @@ def find_post_type(message: Message) -> Optional[str]:
     return post_type
 
 
-def is_post_type_banned(post_type:str, chat_type:str) -> bool:
+def is_post_type_banned(post_type: str, chat_type: str) -> bool:
     """
     True if a post type is not allowed in its specific context (DM or group)
     """
-    banned_in_dm = post_type in POST_TYPES_BANNED_IN_DM and chat_type=="private"
-    banned_in_group = post_type in POST_TYPES_BANNED_IN_GROUP and chat_type!="private"
+    banned_in_dm = post_type in POST_TYPES_BANNED_IN_DM and chat_type == "private"
+    banned_in_group = post_type in POST_TYPES_BANNED_IN_GROUP and chat_type != "private"
     return banned_in_dm or banned_in_group
+
+
+def format_user_tag(username, userid):
+    """Helper func that returns a markdown link to a user's profile"""
+    return f"[{username}](tg://user?id={userid})"
