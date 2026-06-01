@@ -50,13 +50,13 @@ def get_summary_message_header(summary_period, start_date=None):
     """Generate the header for the summary table based on the current summary window"""
     if summary_period == DAILY_SUMMARY_WINDOW:
         return (
-            f"*Daily Summary*: {datetime.datetime.now().strftime("%d/%m/%Y")}"
+            f"*Daily Summary*: {datetime.datetime.now().strftime('%d/%m/%Y')}"
             + f"\nThe following games were posted in the past {summary_period} days and are still available\n"
         )
     if summary_period == WEEKLY_SUMMARY_WINDOW:
         start_date_str = start_date.strftime("%d/%m/%Y")
         return (
-            f"*Weekly Summary*: {start_date_str} to {datetime.datetime.now().strftime("%d/%m/%Y")}"
+            f"*Weekly Summary*: {start_date_str} to {datetime.datetime.now().strftime('%d/%m/%Y')}"
             + f"\nThe following games were posted in the past {summary_period} days and are still available\n"
         )
     return ""
