@@ -1,6 +1,6 @@
 """Stores constants to be used across the project"""
 
-SALE_EXPIRY_DAYS = 90
+SALE_EXPIRY_DAYS = 180
 
 ADMIN_IDS = [
     995823071,  # Sahil Thapar
