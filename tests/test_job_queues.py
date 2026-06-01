@@ -434,7 +434,7 @@ class TestJobQueues:
     async def test_generate_summary_no_posts(self, database, mock_context, mocker):
         """Tests generate_summary logs and exits when no posts are found"""
         mock_log = mocker.patch("src.job_queues.log")
-        mock_read_posts = mocker.patch("src.job_queues.read_posts", return_value=[])
+        mocker.patch("src.job_queues.read_posts", return_value=[])
 
         from src.constants import DAILY_SUMMARY_WINDOW
         from src.job_queues import generate_summary
@@ -476,7 +476,7 @@ class TestJobQueues:
         mock_read_posts = mocker.patch(
             "src.job_queues.read_posts", return_value=[mock_post_1, mock_post_2]
         )
-        mock_header = mocker.patch(
+        mocker.patch(
             "src.job_queues.get_summary_message_header",
             return_value="*Weekly Summary*: header\n",
         )
