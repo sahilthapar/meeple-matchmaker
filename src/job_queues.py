@@ -4,9 +4,14 @@ import datetime
 import logging
 
 from telegram.ext import CallbackContext
-from src.constants import MEEPLE_MARKET_CHAT_ID, SALE_EXPIRY_DAYS, SUMMARY_WINDOW
+from src.constants import (
+    MEEPLE_MARKET_CHAT_ID,
+    SALE_EXPIRY_DAYS,
+    DAILY_SUMMARY_WINDOW,
+    WEEKLY_SUMMARY_WINDOW,
+)
 from src.database import read_posts, update_and_get_stale_posts
-from src.messages import generate_stale_post_message
+from src.messages import generate_stale_post_message, get_summary_message_header
 from src.telegrampost import parse_tag
 
 log = logging.getLogger("meeple-matchmaker")
@@ -37,8 +42,12 @@ async def cleanup_expired_posts(context):
                 context.bot.send_message,
             )
         except Exception as e:
-            log.error("Failed to send expiry notification to user %d for game %s: %s"
-            , post.user.telegram_userid, post.game.game_name, e)
+            log.error(
+                "Failed to send expiry notification to user %d for game %s: %s",
+                post.user.telegram_userid,
+                post.game.game_name,
+                e,
+            )
 
 
 async def inform_user(game_name: str, user_id, user_name: str, send_message):
@@ -49,31 +58,44 @@ async def inform_user(game_name: str, user_id, user_name: str, send_message):
         parse_mode="Markdown",
     )
 
-async def generate_daily_summary(context:CallbackContext):
+
+async def generate_daily_summary(context: CallbackContext):
     """Get all active posts from the past 48hrs. Create a message with sell type, game name, and user."""
+    await generate_summary(DAILY_SUMMARY_WINDOW, context)
+
+
+async def generate_weekly_summary(context: CallbackContext):
+    """Get all active posts from the past 1 week. Create a message with sell type, game name, and user."""
+    await generate_summary(WEEKLY_SUMMARY_WINDOW, context)
+
+
+async def generate_summary(summary_period, context: CallbackContext):
+    """Get all active posts from the past start date. Create a message with sell type, game name, and user."""
     now = datetime.datetime.now()
-    time_48_hrs_ago = now - datetime.timedelta(days=SUMMARY_WINDOW)
-    posts = read_posts(start_date=time_48_hrs_ago, is_active=True, post_type="sale")
-    if len(posts)==0:
-        log.info("No posts to summarize from the past %s days", SUMMARY_WINDOW)
+    start_date = now - datetime.timedelta(days=summary_period)
+    posts = read_posts(start_date=start_date, is_active=True, post_type="sale")
+
+    if len(posts) == 0:
+        log.info(
+            "No posts to summarize from %s till today", start_date.strftime("%d/%m/%Y")
+        )
         return
 
     final_table = ""
+
     for post in posts:
-        final_table+=f"\n{escape_markdown_reserved_chars(parse_tag(post.text))} {escape_markdown_reserved_chars(post.game.game_name)} {escape_markdown_reserved_chars(post.user.first_name)}"
+        final_table += f"\n{escape_markdown_reserved_chars(parse_tag(post.text))} {escape_markdown_reserved_chars(post.game.game_name)} by {escape_markdown_reserved_chars(post.user.first_name)}"
 
-    final_table = f"*Daily Summary*: {now.strftime("%d/%m/%Y")}" + "\nThe following games were posted in the past 48 hours and are still available\n" + final_table
+    final_table = get_summary_message_header(summary_period, start_date) + final_table
+    log.info(final_table)
+    await context.bot.send_message(
+        chat_id=MEEPLE_MARKET_CHAT_ID, text=final_table, parse_mode="MarkdownV2"
+    )
 
-    log.info("%s",final_table)
-    await context.bot.send_message(chat_id=MEEPLE_MARKET_CHAT_ID, text=final_table, parse_mode="MarkdownV2")
 
-def escape_markdown_reserved_chars(text:str)->str:
-    """Remove characters that are reserved by markdown from the input text"""
-    text = text.replace("(", r"\(")
-    text = text.replace(")", r"\)")
-    text = text.replace("#", r"\#")
-    text = text.replace("_", r"\_")
-    text = text.replace("~", r"\~")
-    text = text.replace("[", r"\[")
-    text = text.replace("]", r"\]")
+def escape_markdown_reserved_chars(text: str) -> str:
+    """Escape characters that are reserved by markdown"""
+    chars_to_escape = "_*[]()~`>#+-=|{}.!"
+    for char in chars_to_escape:
+        text = text.replace(char, f"\\{char}")
     return text

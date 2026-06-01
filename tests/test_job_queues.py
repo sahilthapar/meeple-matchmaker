@@ -40,8 +40,12 @@ class TestJobQueues:
             game.save()
 
         # Create stale sale posts (older than SALE_EXPIRY_DAYS)
-        old_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS + 10)
-        recent_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS - 10)
+        old_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(
+            days=SALE_EXPIRY_DAYS + 10
+        )
+        recent_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(
+            days=SALE_EXPIRY_DAYS - 10
+        )
 
         stale_post_1 = Post(
             post_type="sale",
@@ -286,9 +290,7 @@ class TestJobQueues:
         )
 
     @pytest.mark.asyncio
-    async def test_cleanup_expired_posts_continues_on_error(
-        self, mock_context, mocker
-    ):
+    async def test_cleanup_expired_posts_continues_on_error(self, mock_context, mocker):
         """Tests cleanup_expired_posts continues processing posts even when inform_user fails"""
         # Mock database functions
         mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")

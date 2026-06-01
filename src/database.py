@@ -22,7 +22,7 @@ def read_posts(
     game_id: Optional[Union[int, list[int]]] = None,
     is_active: Optional[bool] = True,
     start_date: Optional[datetime.date] = None,
-    end_date: Optional[datetime.date] = None
+    end_date: Optional[datetime.date] = None,
 ) -> Iterable[Post]:
     """
     Gets posts from the database.
@@ -97,5 +97,6 @@ def update_and_get_stale_posts(cutoff_time):
             & (Post.active == True)  # noqa: E712
             & (Post.post_type == "sale")
         )
-        .returning(Post).execute()
+        .returning(Post)
+        .execute()
     )
