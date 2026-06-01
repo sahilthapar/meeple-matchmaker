@@ -77,7 +77,7 @@ async def generate_summary(summary_period, context: CallbackContext):
 
     if len(posts) == 0:
         log.info(
-            "No posts to summarize from %s till today", start_date.strftime("%d/%m/%Y")
+            "No posts to summarize from %s till today - summary window: %d", start_date.strftime("%d/%m/%Y"), summary_period
         )
         return
 
@@ -87,7 +87,6 @@ async def generate_summary(summary_period, context: CallbackContext):
         final_table += f"\n{escape_markdown_reserved_chars(parse_tag(post.text))} {escape_markdown_reserved_chars(post.game.game_name)} by {escape_markdown_reserved_chars(post.user.first_name)}"
 
     final_table = get_summary_message_header(summary_period, start_date) + final_table
-    log.info(final_table)
     await context.bot.send_message(
         chat_id=MEEPLE_MARKET_CHAT_ID, text=final_table, parse_mode="MarkdownV2"
     )
