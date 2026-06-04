@@ -1,8 +1,9 @@
 """Contains message constants for use across the project"""
 
+import datetime
 import textwrap
 
-from src.constants import SALE_EXPIRY_DAYS
+from src.constants import DAILY_SUMMARY_WINDOW, SALE_EXPIRY_DAYS, WEEKLY_SUMMARY_WINDOW
 
 
 # Command handler messages
@@ -43,3 +44,19 @@ def generate_stale_post_message(user_name, game_name):
     Your sell post for *{game_name}* was removed due to inactivity for {SALE_EXPIRY_DAYS} days.
     You may re-post if the game is still available.
     """)
+
+
+def get_summary_message_header(summary_period, start_date=None):
+    """Generate the header for the summary table based on the current summary window"""
+    if summary_period == DAILY_SUMMARY_WINDOW:
+        return (
+            f"*Daily Summary*: {datetime.datetime.now().strftime('%d/%m/%Y')}"
+            + f"\nThe following games were posted in the past {summary_period} days and are still available\n"
+        )
+    if summary_period == WEEKLY_SUMMARY_WINDOW:
+        start_date_str = start_date.strftime("%d/%m/%Y")
+        return (
+            f"*Weekly Summary*: {start_date_str} to {datetime.datetime.now().strftime('%d/%m/%Y')}"
+            + f"\nThe following games were posted in the past {summary_period} days and are still available\n"
+        )
+    return ""
