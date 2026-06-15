@@ -5,7 +5,12 @@ import datetime
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
 
-from src.job_queues import cleanup_expired_posts, inform_user
+from src.job_queues import (
+    cleanup_expired_posts,
+    inform_user,
+    generate_daily_summary,
+    generate_weekly_summary,
+)
 from src.models import User, Game, Post
 from src.constants import SALE_EXPIRY_DAYS
 from src.messages import generate_stale_post_message
@@ -40,8 +45,12 @@ class TestJobQueues:
             game.save()
 
         # Create stale sale posts (older than SALE_EXPIRY_DAYS)
-        old_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS + 10)
-        recent_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(days=SALE_EXPIRY_DAYS - 10)
+        old_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(
+            days=SALE_EXPIRY_DAYS + 10
+        )
+        recent_date = datetime.datetime.now(datetime.timezone.utc) - timedelta(
+            days=SALE_EXPIRY_DAYS - 10
+        )
 
         stale_post_1 = Post(
             post_type="sale",
@@ -286,9 +295,7 @@ class TestJobQueues:
         )
 
     @pytest.mark.asyncio
-    async def test_cleanup_expired_posts_continues_on_error(
-        self, mock_context, mocker
-    ):
+    async def test_cleanup_expired_posts_continues_on_error(self, mock_context, mocker):
         """Tests cleanup_expired_posts continues processing posts even when inform_user fails"""
         # Mock database functions
         mock_update = mocker.patch("src.job_queues.update_and_get_stale_posts")
@@ -338,3 +345,233 @@ class TestJobQueues:
         error_call_args = mock_log_error.call_args[0]
         assert "111" in str(error_call_args[1])  # User ID
         assert "Catan" in str(error_call_args[2])  # Game name
+
+    @pytest.mark.parametrize(
+        "input_text, expected_output",
+        [
+            ("hello", "hello"),
+            ("hello_world", "hello\\_world"),
+            ("*bold*", "\\*bold\\*"),
+            ("[link]", "\\[link\\]"),
+            ("(text)", "\\(text\\)"),
+            ("hello~world", "hello\\~world"),
+            ("`code`", "\\`code\\`"),
+            (">quote", "\\>quote"),
+            ("#hashtag", "\\#hashtag"),
+            ("a+b", "a\\+b"),
+            ("a-b", "a\\-b"),
+            ("a=b", "a\\=b"),
+            ("a|b", "a\\|b"),
+            ("{text}", "\\{text\\}"),
+            ("hello.world", "hello\\.world"),
+            ("what!", "what\\!"),
+            ("스플렌더: Pokémon (Splendor: Pokémon)", "스플렌더: Pokémon \\(Splendor: Pokémon\\)"),
+            ("a_b*c[d]", "a\\_b\\*c\\[d\\]"),
+            ("all!chars@#$%_*[]()~`>#+-=|{}.!test", "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test"),
+        ],
+        ids=[
+            "no_special_chars",
+            "underscore",
+            "asterisks",
+            "square_brackets",
+            "parentheses",
+            "tilde",
+            "backtick",
+            "greater_than",
+            "hash",
+            "plus",
+            "minus",
+            "equals",
+            "pipe",
+            "curly_braces",
+            "period",
+            "exclamation",
+            "korean_and_parens",
+            "multiple_chars",
+            "all_chars",
+        ],
+    )
+    def test_escape_markdown_reserved_chars(self, input_text, expected_output):
+        """Tests escape_markdown_reserved_chars properly escapes all markdown reserved characters"""
+        from src.job_queues import escape_markdown_reserved_chars
+
+        result = escape_markdown_reserved_chars(input_text)
+        assert result == expected_output
+
+    @pytest.mark.asyncio
+    async def test_generate_daily_summary(self, database, mock_context, mocker):
+        """Tests generate_daily_summary calls generate_summary with DAILY_SUMMARY_WINDOW"""
+        mock_generate_summary = mocker.patch(
+            "src.job_queues.generate_summary", new_callable=AsyncMock
+        )
+
+        from src.constants import DAILY_SUMMARY_WINDOW
+
+        await generate_daily_summary(mock_context)
+
+        mock_generate_summary.assert_called_once()
+        call_args = mock_generate_summary.call_args[0]
+        assert call_args[0] == DAILY_SUMMARY_WINDOW
+        assert call_args[1] == mock_context
+
+    @pytest.mark.asyncio
+    async def test_generate_weekly_summary(self, database, mock_context, mocker):
+        """Tests generate_weekly_summary calls generate_summary with WEEKLY_SUMMARY_WINDOW"""
+        mock_generate_summary = mocker.patch(
+            "src.job_queues.generate_summary", new_callable=AsyncMock
+        )
+
+        from src.constants import WEEKLY_SUMMARY_WINDOW
+
+        await generate_weekly_summary(mock_context)
+
+        mock_generate_summary.assert_called_once()
+        call_args = mock_generate_summary.call_args[0]
+        assert call_args[0] == WEEKLY_SUMMARY_WINDOW
+        assert call_args[1] == mock_context
+
+    @pytest.mark.asyncio
+    async def test_generate_summary_no_posts(self, database, mock_context, mocker):
+        """Tests generate_summary logs and exits when no posts are found"""
+        mock_log = mocker.patch("src.job_queues.log")
+        mocker.patch("src.job_queues.read_posts", return_value=[])
+
+        from src.constants import DAILY_SUMMARY_WINDOW
+        from src.job_queues import generate_summary
+
+        await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
+
+        # Assert send_message was not called
+        assert mock_context.bot.send_message.call_count == 0
+
+        # Assert logging was called
+        assert mock_log.info.called
+
+    @pytest.mark.asyncio
+    async def test_generate_summary_with_posts(self, database, mock_context, mocker):
+        """Tests generate_summary formats and sends summary message with posts"""
+        # Create mock posts
+        mock_user_1 = MagicMock()
+        mock_user_1.first_name = "Alice"
+
+        mock_user_2 = MagicMock()
+        mock_user_2.first_name = "Bob"
+
+        mock_game_1 = MagicMock()
+        mock_game_1.game_name = "Catan"
+
+        mock_game_2 = MagicMock()
+        mock_game_2.game_name = "Ticket to Ride"
+
+        mock_post_1 = MagicMock()
+        mock_post_1.text = "#sell Catan"
+        mock_post_1.game = mock_game_1
+        mock_post_1.user = mock_user_1
+
+        mock_post_2 = MagicMock()
+        mock_post_2.text = "#auction Ticket to Ride"
+        mock_post_2.game = mock_game_2
+        mock_post_2.user = mock_user_2
+
+        mock_read_posts = mocker.patch(
+            "src.job_queues.read_posts", return_value=[mock_post_1, mock_post_2]
+        )
+        mocker.patch(
+            "src.job_queues.get_summary_message_header",
+            return_value="*Weekly Summary*: header\n",
+        )
+
+        from src.constants import WEEKLY_SUMMARY_WINDOW
+        from src.job_queues import generate_summary
+
+        await generate_summary(WEEKLY_SUMMARY_WINDOW, mock_context)
+
+        # Verify send_message was called once
+        assert mock_context.bot.send_message.call_count == 1
+
+        # Get the sent message
+        call_kwargs = mock_context.bot.send_message.call_args[1]
+        message_text = call_kwargs["text"]
+        parse_mode = call_kwargs["parse_mode"]
+
+        # Assert message contains header
+        assert "*Weekly Summary*: header" in message_text
+
+        # Assert message contains game names and user names
+        assert "Catan" in message_text
+        assert "Ticket to Ride" in message_text
+        assert "Alice" in message_text
+        assert "Bob" in message_text
+
+        # Assert parse mode is MarkdownV2
+        assert parse_mode == "MarkdownV2"
+
+        # Assert read_posts was called with correct parameters
+        call_args = mock_read_posts.call_args[1]
+        assert call_args["is_active"] is True
+        assert call_args["post_type"] == "sale"
+
+    @pytest.mark.asyncio
+    async def test_generate_summary_escapes_special_characters(
+        self, database, mock_context, mocker
+    ):
+        """Tests generate_summary escapes all special characters in game names and user names"""
+        # Create mock post with special characters
+        mock_user = MagicMock()
+        mock_user.first_name = "User_With*Chars"
+
+        mock_game = MagicMock()
+        mock_game.game_name = "Game-With[Special]Chars"
+
+        mock_post = MagicMock()
+        mock_post.text = "#sell Test"
+        mock_post.game = mock_game
+        mock_post.user = mock_user
+
+        mocker.patch("src.job_queues.read_posts", return_value=[mock_post])
+        mocker.patch(
+            "src.job_queues.get_summary_message_header",
+            return_value="Header\n",
+        )
+
+        from src.constants import DAILY_SUMMARY_WINDOW
+        from src.job_queues import generate_summary
+
+        await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
+
+        # Get the sent message
+        call_kwargs = mock_context.bot.send_message.call_args[1]
+        message_text = call_kwargs["text"]
+
+        # Assert special characters are escaped
+        assert "\\_" in message_text or "User_With*Chars" not in message_text
+        assert "\\[" in message_text or "[" not in message_text
+
+    @pytest.mark.asyncio
+    async def test_generate_summary_calls_read_posts_with_correct_window(
+        self, database, mock_context, mocker
+    ):
+        """Tests generate_summary passes correct date range to read_posts"""
+        mock_read_posts = mocker.patch("src.job_queues.read_posts", return_value=[])
+        mocker.patch("src.job_queues.log")
+
+        from src.constants import DAILY_SUMMARY_WINDOW
+        from src.job_queues import generate_summary
+
+        await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
+
+        # Verify read_posts was called
+        assert mock_read_posts.called
+
+        # Get call arguments
+        call_kwargs = mock_read_posts.call_args[1]
+
+        # Assert start_date is approximately DAILY_SUMMARY_WINDOW days ago
+        now = datetime.datetime.now()
+        expected_start_date = now - timedelta(days=DAILY_SUMMARY_WINDOW)
+
+        # Allow 1 second difference due to execution time
+        time_diff = abs(
+            (call_kwargs["start_date"] - expected_start_date).total_seconds()
+        )
+        assert time_diff < 1

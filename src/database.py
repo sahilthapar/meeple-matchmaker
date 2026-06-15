@@ -1,5 +1,6 @@
 """Module to interact with the database"""
 
+import datetime
 from typing import Optional, Iterable, Union
 import operator
 from functools import reduce
@@ -20,6 +21,8 @@ def read_posts(
     post_type: Optional[str] = None,
     game_id: Optional[Union[int, list[int]]] = None,
     is_active: Optional[bool] = True,
+    start_date: Optional[datetime.date] = None,
+    end_date: Optional[datetime.date] = None,
 ) -> Iterable[Post]:
     """
     Gets posts from the database.
@@ -39,11 +42,16 @@ def read_posts(
         games = Game.select().where(Game.game_id << game_id)
 
         clauses.append((Post.game.in_(games)))
+    if start_date:
+        clauses.append((Post.updated_at > start_date))
+    if end_date:
+        clauses.append((Post.updated_at < end_date))
 
     data = (
         Post.select(
             Post.post_type,
             Post.user,
+            Post.text,
             Post.game,
             Post.active,
             Game.game_id,
@@ -89,5 +97,6 @@ def update_and_get_stale_posts(cutoff_time):
             & (Post.active == True)  # noqa: E712
             & (Post.post_type == "sale")
         )
-        .returning(Post).execute()
+        .returning(Post)
+        .execute()
     )
