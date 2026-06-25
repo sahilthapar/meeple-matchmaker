@@ -12,6 +12,7 @@ from src.telegrampost import (
     parse_message,
     find_post_type,
     is_post_type_banned,
+    is_from_external_chat
 )
 from src.database import read_posts, disable_posts
 from src.models import Post
@@ -49,7 +50,7 @@ async def message_handler(
     if not post_type:
         return
 
-    should_ignore_post = is_post_type_banned(post_type, update.effective_chat.type)
+    should_ignore_post = is_post_type_banned(post_type, update.effective_chat.type) or is_from_external_chat(update.effective_chat.type, update.effective_chat.id)
 
     if should_ignore_post:
         await update.message.set_reaction("👎")
