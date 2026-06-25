@@ -77,7 +77,9 @@ async def generate_summary(summary_period, context: CallbackContext):
 
     if len(posts) == 0:
         log.info(
-            "No posts to summarize from %s till today - summary window: %d", start_date.strftime("%d/%m/%Y"), summary_period
+            "No posts to summarize from %s till today - summary window: %d",
+            start_date.strftime("%d/%m/%Y"),
+            summary_period,
         )
         return
 

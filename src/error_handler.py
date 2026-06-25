@@ -11,6 +11,7 @@ from src.constants import ERROR_GROUP_CHAT_ID
 
 log = logging.getLogger("meeple-matchmaker")
 
+
 async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
     # Log the error before we do anything else, so we can see it even if something breaks.
@@ -18,7 +19,9 @@ async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
-    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_list = traceback.format_exception(
+        None, context.error, context.error.__traceback__
+    )
     tb_string = "".join(tb_list)
 
     # Build the message with some markup and additional information about what happened.

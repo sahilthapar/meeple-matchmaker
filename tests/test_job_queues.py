@@ -365,9 +365,15 @@ class TestJobQueues:
             ("{text}", "\\{text\\}"),
             ("hello.world", "hello\\.world"),
             ("what!", "what\\!"),
-            ("스플렌더: Pokémon (Splendor: Pokémon)", "스플렌더: Pokémon \\(Splendor: Pokémon\\)"),
+            (
+                "스플렌더: Pokémon (Splendor: Pokémon)",
+                "스플렌더: Pokémon \\(Splendor: Pokémon\\)",
+            ),
             ("a_b*c[d]", "a\\_b\\*c\\[d\\]"),
-            ("all!chars@#$%_*[]()~`>#+-=|{}.!test", "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test"),
+            (
+                "all!chars@#$%_*[]()~`>#+-=|{}.!test",
+                "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test",
+            ),
         ],
         ids=[
             "no_special_chars",

@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 import pytest
 
+from src.constants import MEEPLE_MARKET_CHAT_ID
 from src.message_handlers import message_handler
 from src.models import Post, Game, User
 from tests.helpers import initialize_post
@@ -17,7 +18,7 @@ class TestMessageHandlers:
         mocker.patch("telegram.ext.ContextTypes.DEFAULT_TYPE")
 
     @pytest.mark.parametrize(
-        argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction",
+        argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction, chat_id",
         argvalues=[
             # simple scenario with a two sale posts followed by a search post
             (
@@ -51,6 +52,7 @@ class TestMessageHandlers:
                 ["[alpha](tg://user?id=101), [beta](tg://user?id=102)"],
                 "private",
                 "👍",
+                123,
             ),
             # simple scenario with a two search posts followed by a sale post
             (
@@ -82,6 +84,7 @@ class TestMessageHandlers:
                 ["[alpha](tg://user?id=101), [beta](tg://user?id=102)"],
                 "group",
                 "👍",
+                MEEPLE_MARKET_CHAT_ID,
             ),
             # simple scenario with a sale post followed by a sold post
             (
@@ -104,6 +107,7 @@ class TestMessageHandlers:
                 [""],
                 "private",
                 "👍",
+                123,
             ),
             # simple scenario with a search post followed by a found post (private chat)
             (
@@ -126,6 +130,7 @@ class TestMessageHandlers:
                 [""],
                 "private",
                 "👍",
+                123,
             ),
             # simple scenario with a search post followed by a found post (group chat)
             (
@@ -148,6 +153,7 @@ class TestMessageHandlers:
                 [""],
                 "group",
                 "👎",
+                MEEPLE_MARKET_CHAT_ID,
             ),
             # simple scenario with a sale post in private chat
             (
@@ -170,6 +176,30 @@ class TestMessageHandlers:
                 [""],
                 "private",
                 "👎",
+                123,
+            ),
+            # simple scenario with a search post followed by a sell post (in external group chat)
+            (
+                [
+                    (
+                        "sell",
+                        167791,
+                        "#lookingfor terraforming mars",
+                        "101",
+                        "alpha",
+                        1,
+                        "Terraforming Mars",
+                    )
+                ],
+                [
+                    SimpleNamespace(
+                        text="#sell terraforming mars", id=101, first_name="Beta"
+                    )
+                ],
+                [""],
+                "group",
+                "👎",
+                123,
             ),
             # todo: scenario with disable notifications in between
         ],
@@ -180,6 +210,7 @@ class TestMessageHandlers:
             "scenario4-simple-search-followed-by-a-found-private",
             "scenario5-simple-search-followed-by-a-found-group",
             "scenario6-simple-search-followed-by-a-sell-private",
+            "scenario7-simple-search-followed-by-a-sell-external-group",
         ],
     )
     async def test_scenario(
@@ -192,6 +223,7 @@ class TestMessageHandlers:
         expected_replies,
         chat_type,
         expected_reaction,
+        chat_id,
         bgg_client,
     ):
         """Tests multiple scenarios passed to the message handler"""
@@ -220,7 +252,7 @@ class TestMessageHandlers:
             mock_update.message.from_user.id = msg.id
             mock_update.message.from_user.first_name = msg.first_name
             mock_update.effective_chat.type = chat_type
-
+            mock_update.effective_chat.id = chat_id
             await message_handler(mock_update, mock_context, bgg_client)
             if reply:
                 mock_update.message.reply_text.assert_called_once_with(
