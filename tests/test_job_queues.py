@@ -1,18 +1,20 @@
 """Test cases for the job_queues module"""
 
-import pytest
 import datetime
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
+import pytest
 
 from src.job_queues import (
     cleanup_expired_posts,
     inform_user,
     generate_daily_summary,
     generate_weekly_summary,
+    generate_summary,
+    escape_markdown_reserved_chars,
 )
 from src.models import User, Game, Post
-from src.constants import SALE_EXPIRY_DAYS
+from src.constants import SALE_EXPIRY_DAYS, DAILY_SUMMARY_WINDOW, WEEKLY_SUMMARY_WINDOW
 from src.messages import generate_stale_post_message
 
 
@@ -365,9 +367,15 @@ class TestJobQueues:
             ("{text}", "\\{text\\}"),
             ("hello.world", "hello\\.world"),
             ("what!", "what\\!"),
-            ("스플렌더: Pokémon (Splendor: Pokémon)", "스플렌더: Pokémon \\(Splendor: Pokémon\\)"),
+            (
+                "스플렌더: Pokémon (Splendor: Pokémon)",
+                "스플렌더: Pokémon \\(Splendor: Pokémon\\)",
+            ),
             ("a_b*c[d]", "a\\_b\\*c\\[d\\]"),
-            ("all!chars@#$%_*[]()~`>#+-=|{}.!test", "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test"),
+            (
+                "all!chars@#$%_*[]()~`>#+-=|{}.!test",
+                "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test",
+            ),
         ],
         ids=[
             "no_special_chars",
@@ -393,7 +401,6 @@ class TestJobQueues:
     )
     def test_escape_markdown_reserved_chars(self, input_text, expected_output):
         """Tests escape_markdown_reserved_chars properly escapes all markdown reserved characters"""
-        from src.job_queues import escape_markdown_reserved_chars
 
         result = escape_markdown_reserved_chars(input_text)
         assert result == expected_output
@@ -404,8 +411,6 @@ class TestJobQueues:
         mock_generate_summary = mocker.patch(
             "src.job_queues.generate_summary", new_callable=AsyncMock
         )
-
-        from src.constants import DAILY_SUMMARY_WINDOW
 
         await generate_daily_summary(mock_context)
 
@@ -420,9 +425,6 @@ class TestJobQueues:
         mock_generate_summary = mocker.patch(
             "src.job_queues.generate_summary", new_callable=AsyncMock
         )
-
-        from src.constants import WEEKLY_SUMMARY_WINDOW
-
         await generate_weekly_summary(mock_context)
 
         mock_generate_summary.assert_called_once()
@@ -437,7 +439,6 @@ class TestJobQueues:
         mocker.patch("src.job_queues.read_posts", return_value=[])
 
         from src.constants import DAILY_SUMMARY_WINDOW
-        from src.job_queues import generate_summary
 
         await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
 
@@ -480,9 +481,6 @@ class TestJobQueues:
             "src.job_queues.get_summary_message_header",
             return_value="*Weekly Summary*: header\n",
         )
-
-        from src.constants import WEEKLY_SUMMARY_WINDOW
-        from src.job_queues import generate_summary
 
         await generate_summary(WEEKLY_SUMMARY_WINDOW, mock_context)
 
@@ -534,9 +532,6 @@ class TestJobQueues:
             return_value="Header\n",
         )
 
-        from src.constants import DAILY_SUMMARY_WINDOW
-        from src.job_queues import generate_summary
-
         await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
 
         # Get the sent message
@@ -554,9 +549,6 @@ class TestJobQueues:
         """Tests generate_summary passes correct date range to read_posts"""
         mock_read_posts = mocker.patch("src.job_queues.read_posts", return_value=[])
         mocker.patch("src.job_queues.log")
-
-        from src.constants import DAILY_SUMMARY_WINDOW
-        from src.job_queues import generate_summary
 
         await generate_summary(DAILY_SUMMARY_WINDOW, mock_context)
 

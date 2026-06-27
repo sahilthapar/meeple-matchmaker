@@ -12,7 +12,6 @@ from src.constants import (
 )
 from src.database import read_posts, update_and_get_stale_posts
 from src.messages import generate_stale_post_message, get_summary_message_header
-from src.telegrampost import parse_tag
 
 log = logging.getLogger("meeple-matchmaker")
 
@@ -77,14 +76,16 @@ async def generate_summary(summary_period, context: CallbackContext):
 
     if len(posts) == 0:
         log.info(
-            "No posts to summarize from %s till today - summary window: %d", start_date.strftime("%d/%m/%Y"), summary_period
+            "No posts to summarize from %s till today - summary window: %d",
+            start_date.strftime("%d/%m/%Y"),
+            summary_period,
         )
         return
 
     final_table = ""
 
     for post in posts:
-        final_table += f"\n{escape_markdown_reserved_chars(parse_tag(post.text))} {escape_markdown_reserved_chars(post.game.game_name)} by {escape_markdown_reserved_chars(post.user.first_name)}"
+        final_table += f"\n{escape_markdown_reserved_chars(post.game.game_name)} by {escape_markdown_reserved_chars(post.user.first_name)}"
 
     final_table = get_summary_message_header(summary_period, start_date) + final_table
     await context.bot.send_message(
