@@ -200,6 +200,24 @@ class TestDatabase:
         posts = [self._post_model_to_tuple(post) for post in posts]
         assert posts == expected_data
 
+    def test_read_posts_distinct_filters_duplicate_rows(self, sample_posts):
+        """Tests that duplicate posts for the same selected fields are returned once."""
+        jacob = User.get(telegram_userid=101)
+        terraform_game = Game.get(game_id=167791)
+
+        Post(
+            post_type="sale",
+            text="#selling terraforming mars again",
+            active=True,
+            user=jacob,
+            game=terraform_game,
+        ).save()
+
+        posts = read_posts(post_type="sale", game_id=167791)
+        posts = [self._post_model_to_tuple(post) for post in posts]
+
+        assert posts == [("sale", 167791, "Jacob", True, "Terraforming Mars")]
+
     def test_update_and_get_stale_posts(self, database):
         """Tests updating stale posts to mark them as inactive based on age"""
         # Create users

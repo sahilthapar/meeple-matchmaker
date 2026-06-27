@@ -51,7 +51,6 @@ def read_posts(
         Post.select(
             Post.post_type,
             Post.user,
-            Post.text,
             Post.game,
             Post.active,
             Game.game_id,
