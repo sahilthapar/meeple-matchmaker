@@ -7,6 +7,7 @@ from typing import Optional, Tuple
 from telegram import Message
 from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
 
+from src.constants import MEEPLE_MARKET_CHAT_ID
 from src.models import Game, User, Post
 
 log = getLogger()
@@ -158,6 +159,16 @@ def is_post_type_banned(post_type: str, chat_type: str) -> bool:
     banned_in_dm = post_type in POST_TYPES_BANNED_IN_DM and chat_type == "private"
     banned_in_group = post_type in POST_TYPES_BANNED_IN_GROUP and chat_type != "private"
     return banned_in_dm or banned_in_group
+
+
+def is_from_external_chat(chat_type, chat_id) -> bool:
+    """
+    True if someone tries to add meeple bot to another group and send messages from there.
+    We only want messages from meeple market to pass through.
+    """
+    if chat_type != "private" and chat_id != MEEPLE_MARKET_CHAT_ID:
+        return True
+    return False
 
 
 def format_user_tag(username, userid):

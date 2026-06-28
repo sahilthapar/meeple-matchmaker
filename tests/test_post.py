@@ -1,6 +1,7 @@
 """Tests all telegram post helper functionality"""
 
 import pytest
+from src.constants import MEEPLE_MARKET_CHAT_ID
 from src.telegrampost import (
     format_user_tag,
     parse_tag,
@@ -11,6 +12,7 @@ from src.telegrampost import (
     get_message_contents,
     get_message_without_command,
     is_post_type_banned,
+    is_from_external_chat,
     find_post_type,
 )
 
@@ -296,6 +298,19 @@ class TestMessageParsing:
     def test_is_post_type_banned(self, post, banned):
         """Test if the function returns the correct boolean for a specific post type"""
         assert is_post_type_banned(post["type"], post["chat_type"]) is banned
+
+    @pytest.mark.parametrize(
+        argnames="chat_type, chat_id, expected",
+        argvalues=[
+            ("private", 123, False),
+            ("group", MEEPLE_MARKET_CHAT_ID, False),
+            ("group", 999, True),
+        ],
+        ids=["private-chat", "meeple-market-group", "external-group"],
+    )
+    def test_is_from_external_chat(self, chat_type, chat_id, expected):
+        """Test whether only non-Meeple-market groups are treated as external."""
+        assert is_from_external_chat(chat_type, chat_id) is expected
 
     @pytest.mark.parametrize(
         argnames="username, user_id, expected",
