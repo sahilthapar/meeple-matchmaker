@@ -175,10 +175,10 @@ class TestMessageParsing:
             "fuzzy-search",
         ],
     )
-    def test_get_game(
+    async def test_get_game(
         self, bgg_client, database, game_name, expected_game_id, expected_game_name
     ):
-        game = get_game_details(game_name, bgg_client)
+        game = await get_game_details(game_name, bgg_client)
         if not expected_game_id:
             assert game is None
         else:
@@ -208,7 +208,7 @@ class TestMessageParsing:
         ],
         ids=["search", "sale", "sale-selling", "no-type", "no-game"],
     )
-    def test_parse_message(
+    async def test_parse_message(
         self,
         mock_message,
         database,
@@ -224,7 +224,7 @@ class TestMessageParsing:
         mock_message.from_user.first_name = str(user_id * 100)
         mock_message.from_user.last_name = str(user_id * 50)
 
-        post, game, user = parse_message(mock_message, bgg_client)
+        post, game, user = await parse_message(mock_message, bgg_client)
 
         if not post:
             assert post == expected_game_id
