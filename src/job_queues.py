@@ -85,7 +85,7 @@ async def generate_summary(summary_period, context: CallbackContext):
     final_table = ""
 
     for post in posts:
-        final_table += f"\n{escape_markdown_reserved_chars(post.game.game_name)} by {escape_markdown_reserved_chars(post.user.first_name)}"
+        final_table += f"\n\- *{escape_markdown_reserved_chars(post.game.game_name)}* by {escape_markdown_reserved_chars(post.user.first_name)}"
 
     final_table = get_summary_message_header(summary_period, start_date) + final_table
     await context.bot.send_message(
