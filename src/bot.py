@@ -83,7 +83,9 @@ def init_app(auth_token):
 def init_message_handler():
     """Returns the message handler with the bgg_client injected. Allows easier testing"""
     bgg_client = BGGClient(
-        cache=CacheBackendMemory(ttl=3600 * 24 * 7),
+        cache=CacheBackendMemory(ttl=3600 * 24),
+        timeout=30,
+        retries=5,
         access_token=os.getenv("BGG_BEARER"),
     )
 
