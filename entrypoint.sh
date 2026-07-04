@@ -18,5 +18,7 @@ if [ ! -f /app/database/meeple-matchmaker.db ]; then
   echo "Seeding meeple-matchmaker.db into volume..."
   cp /app/seed/meeple-matchmaker.db /app/database/meeple-matchmaker.db
 fi
-
+cd /app/migrations
+python migration_add_telegram_msg_id.py
+cd /app
 exec "$@"
