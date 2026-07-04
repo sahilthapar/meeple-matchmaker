@@ -15,7 +15,7 @@ from src.telegrampost import (
     is_post_type_banned,
     is_from_external_chat,
 )
-from src.database import get_matching_active_posts, disable_posts
+from src.database import read_posts, disable_posts
 from src.models import Post
 
 log = logging.getLogger("meeple-matchmaker")
@@ -88,7 +88,7 @@ def find_matching_posts(post: Post) -> Optional[str]:
     """
 
     complementary_post_type = COMPLEMENTARY_POST_TYPE.get(post.post_type)
-    matching_posts = get_matching_active_posts(
+    matching_posts = read_posts(
         game_id=post.game.game_id,
         post_type=complementary_post_type,
     )

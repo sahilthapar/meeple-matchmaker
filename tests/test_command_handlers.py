@@ -181,14 +181,14 @@ class TestCommandHandlers:
         ]
 
         # Mock get_matching_posts to return test data
-        mock_get_matching_active_posts = mocker.patch(
-            "src.command_handlers.get_matching_active_posts", return_value=posts_orm
+        mock_read_posts = mocker.patch(
+            "src.command_handlers.read_posts", return_value=posts_orm
         )
         await list_all_active_sales(mock_update, None)
         if chat_type != "private":
             mock_update.message.set_reaction.assert_called_once_with("👎")
         else:
-            mock_get_matching_active_posts.assert_called_once_with(post_type="sale")
+            mock_read_posts.assert_called_once_with(post_type="sale")
             mock_update.message.reply_text.assert_called()
 
     @pytest.mark.parametrize("chat_type", ("private", "group"))

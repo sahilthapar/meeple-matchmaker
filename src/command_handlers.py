@@ -16,7 +16,7 @@ from src.telegrampost import (
     format_user_tag,
     get_message_without_command,
 )
-from src.database import disable_posts, get_matching_active_posts, read_posts
+from src.database import disable_posts, read_posts
 from src.messages import (
     INVALID_DISABLE_POST_FOR_USER,
     INVALID_NOT_AN_ADMIN,
@@ -121,7 +121,7 @@ async def list_all_active_sales(update, _):
     if update.effective_chat.type != "private":
         await update.message.set_reaction("👎")
     else:
-        data = get_matching_active_posts(post_type="sale")
+        data = read_posts(post_type="sale")
         reply = format_list_of_posts(data)
         for part in reply:
             await update.message.reply_text(part, parse_mode="Markdown")
@@ -278,11 +278,11 @@ async def match_me(update, _):
     matched_searches = []
     matched_sales = []
     if user_searches:
-        matched_searches = get_matching_active_posts(
+        matched_searches = read_posts(
             game_id=[search.game.game_id for search in user_searches], post_type="sale"
         )
     if user_sales:
-        matched_sales = get_matching_active_posts(
+        matched_sales = read_posts(
             game_id=[sale.game.game_id for sale in user_sales], post_type="search"
         )
 

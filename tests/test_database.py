@@ -6,7 +6,6 @@ from src.database import (
     read_posts,
     disable_posts,
     update_and_get_stale_posts,
-    get_matching_active_posts,
 )
 from src.models import User, Game, Post
 
@@ -297,48 +296,3 @@ class TestDatabase:
 
         old_inactive_sale_updated = Post.get_by_id(old_inactive_sale.id)
         assert old_inactive_sale_updated.active == False
-
-    @pytest.mark.parametrize(
-        argnames="post_type,game_id,expected_data",
-        argvalues=[
-            (
-                "sale",
-                167791,
-                [("sale", 167791, "Jacob", None, "Terraforming Mars")],
-            ),
-            (
-                "search",
-                167791,
-                [("search", 167791, "Henry", None, "Terraforming Mars")],
-            ),
-        ],
-        ids=["sale_tfm_matches", "search_tfm_matches"],
-    )
-    def test_get_matching_active_posts_returns_basic_matches(
-        self, sample_posts, post_type, game_id, expected_data
-    ):
-        """Tests basic matching lookups for active posts."""
-        posts = get_matching_active_posts(post_type=post_type, game_id=game_id)
-        posts = [self._post_model_to_tuple(post) for post in posts]
-
-        assert posts == expected_data
-
-    def test_get_matching_active_posts_dedupes_duplicate_rows_for_same_user_game_and_type(
-        self, sample_posts
-    ):
-        """Tests that duplicate matching rows are deduped by user/game/type."""
-        jacob = User.get(telegram_userid=101)
-        terraform_game = Game.get(game_id=167791)
-
-        Post(
-            post_type="sale",
-            text="#selling terraforming mars again",
-            active=True,
-            user=jacob,
-            game=terraform_game,
-        ).save()
-
-        posts = get_matching_active_posts(post_type="sale", game_id=167791)
-        posts = [self._post_model_to_tuple(post) for post in posts]
-
-        assert posts == [("sale", 167791, "Jacob", None, "Terraforming Mars")]
