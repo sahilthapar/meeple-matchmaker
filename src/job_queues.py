@@ -12,7 +12,7 @@ from src.constants import (
 )
 from src.database import read_posts, update_and_get_stale_posts
 from src.messages import generate_stale_post_message, get_summary_message_header
-from src.telegrampost import form_link_to_post
+from src.telegrampost import escape_markdown_reserved_chars, form_link_to_post
 
 log = logging.getLogger("meeple-matchmaker")
 
@@ -96,10 +96,3 @@ async def generate_summary(summary_period, context: CallbackContext):
         chat_id=MEEPLE_MARKET_CHAT_ID, text=final_table, parse_mode="MarkdownV2"
     )
 
-
-def escape_markdown_reserved_chars(text: str) -> str:
-    """Escape characters that are reserved by markdown"""
-    chars_to_escape = "_*[]()~`>#+-=|{}.!"
-    for char in chars_to_escape:
-        text = text.replace(char, f"\\{char}")
-    return text

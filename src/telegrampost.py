@@ -189,6 +189,14 @@ def format_user_tag(username, userid):
     return f"[{username}](tg://user?id={userid})"
 
 
+def escape_markdown_reserved_chars(text: str) -> str:
+    """Escape characters that are reserved by markdown when rendering bot messages."""
+    chars_to_escape = "_*[]()~`>#+-=|{}.!"
+    for char in chars_to_escape:
+        text = text.replace(char, f"\\{char}")
+    return text
+
+
 def form_link_to_post(telegram_msg_id, text="Go To Post"):
     """Helper func that returns a markdown link to a specific message in meeple market"""
     # Group Chat IDs start with '-100', but links don't use that
