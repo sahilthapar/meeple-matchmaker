@@ -84,6 +84,7 @@ async def generate_summary(summary_period, context: CallbackContext):
 
     final_table = ""
 
+    # TODO: Add post link here
     for post in posts:
         final_table += f"\n\- *{escape_markdown_reserved_chars(post.game.game_name)}* by {escape_markdown_reserved_chars(post.user.first_name)}"
 

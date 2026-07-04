@@ -123,7 +123,7 @@ class TestCommandHandlers:
             game_id=game_id,
             game_name=game_name,
         )
-        assert format_post(post, bgg_client) == textwrap.dedent(expected_response)
+        assert format_post(post) == textwrap.dedent(expected_response)
 
     @pytest.mark.parametrize("chat_type", ("private", "group"))
     async def test_start_command(self, mock_update, chat_type):
@@ -180,18 +180,19 @@ class TestCommandHandlers:
             ),
         ]
 
-        # Mock read_posts to return test data
-        mock_read_posts = mocker.patch(
-            "src.command_handlers.read_posts", return_value=posts_orm
+        # Mock get_matching_posts to return test data
+        mock_get_matching_active_posts = mocker.patch(
+            "src.command_handlers.get_matching_active_posts", return_value=posts_orm
         )
         await list_all_active_sales(mock_update, None)
         if chat_type != "private":
             mock_update.message.set_reaction.assert_called_once_with("👎")
         else:
-            mock_read_posts.assert_called_once_with(post_type="sale")
+            mock_get_matching_active_posts.assert_called_once_with(post_type="sale")
             mock_update.message.reply_text.assert_called()
 
     @pytest.mark.parametrize("chat_type", ("private", "group"))
+    
     async def test_list_all_active_searches(
         self, mock_update, chat_type, mocker, database
     ):

@@ -61,10 +61,65 @@ def read_posts(
         .join(Game, on=Post.game == Game.id)
         .join(User, on=Post.user == User.id)
         .where(reduce(operator.and_, clauses))
-        .order_by(Post.post_type, Game.game_name, User.first_name)
+        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at)
         .distinct()
     )
     return data.execute()
+
+
+def get_matching_active_posts(
+    post_type: Optional[str] = None,
+    game_id: Optional[Union[int, list[int]]] = None,
+) -> Iterable[Post]:
+    """
+    Gets matching posts with telegram message id from the database.
+    """
+    clauses = [(Post.active == True)]
+
+    if post_type:
+        clauses.append((Post.post_type == post_type))
+    if game_id:
+        # change to a sub-query
+        if isinstance(game_id, int):
+            game_id = [game_id]
+        games = Game.select().where(Game.game_id << game_id)
+        clauses.append((Post.game.in_(games)))
+
+    data = (
+        Post.select(
+            Post.post_type,
+            Post.user,
+            Post.game,
+            Post.telegram_msg_id,
+            Game.game_id,
+            Game.game_name,
+            User.first_name,
+            User.telegram_userid,
+        )
+        .join(Game, on=Post.game == Game.id)
+        .join(User, on=Post.user == User.id)
+        .where(reduce(operator.and_, clauses))
+        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at)
+    )
+    results = data.execute()
+
+    seen = set()
+    filtered_results = []
+
+    # Deduplicating here because distinct doesn't work when we fetch message ids
+    for matched_post in results:
+        dedupe_key = (
+            matched_post.user.telegram_userid,
+            matched_post.game.game_id,
+            matched_post.post_type,
+        )
+        if dedupe_key in seen:
+            continue
+
+        seen.add(dedupe_key)
+        filtered_results.append(matched_post)
+
+    return filtered_results
 
 
 def disable_posts(

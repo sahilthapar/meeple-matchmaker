@@ -1,7 +1,7 @@
 """Module providing ORM models for the entities used in meeple-matchmaker"""
 
 import datetime
-from peewee import SqliteDatabase, Model
+from peewee import BigIntegerField, SqliteDatabase, Model
 from peewee import (
     AutoField,
     IntegerField,
@@ -69,6 +69,8 @@ class Post(Model):
     active = BooleanField(default=True)
     user = ForeignKeyField(User)
     game = ForeignKeyField(Game)
+    # TODO: Add migration script for this
+    telegram_msg_id = BigIntegerField(null=True)
     updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
     class Meta:
