@@ -69,7 +69,6 @@ class Post(Model):
     active = BooleanField(default=True)
     user = ForeignKeyField(User)
     game = ForeignKeyField(Game)
-    # TODO: Add migration script for this
     telegram_msg_id = BigIntegerField(null=True)
     updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
