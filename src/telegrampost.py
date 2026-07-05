@@ -197,7 +197,7 @@ def escape_markdown_reserved_chars(text: str) -> str:
     return text
 
 
-def form_link_to_post(telegram_msg_id, text="Go To Post"):
+def form_link_to_post(telegram_msg_id, text="(Post)"):
     """Helper func that returns a markdown link to a specific message in meeple market"""
     # Group Chat IDs start with '-100', but links don't use that
     chat_id_without_prefix = str(MEEPLE_MARKET_CHAT_ID)[4:]

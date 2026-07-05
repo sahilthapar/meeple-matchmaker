@@ -107,7 +107,7 @@ def get_matching_post_message_contents(post: Post):
     """
     contents = format_user_tag(post.user.first_name, post.user.telegram_userid)
     if post.telegram_msg_id and post.post_type == "sale":
-        contents += " -> " + form_link_to_post(post.telegram_msg_id)
+        contents += " " + form_link_to_post(post.telegram_msg_id)
     return contents
 
 
