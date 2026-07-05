@@ -40,8 +40,8 @@ class TestMessageHandlers:
         contents = get_matching_post_message_contents(post)
 
         assert contents == (
-            "[alpha](tg://user?id=101) -> "
-            f"[Go To Post](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post=42)"
+            "[alpha](tg://user?id=101) "
+            f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post=42)"
         )
 
     def test_get_matching_post_message_contents_omits_post_link_for_non_sale_posts(
@@ -87,8 +87,8 @@ class TestMessageHandlers:
         reply = find_matching_posts(search_post)
 
         assert reply == (
-            "[alpha](tg://user?id=101) -> "
-            f"[Go To Post](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post={sale_post.telegram_msg_id})"
+            "[alpha](tg://user?id=101) "
+            f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post={sale_post.telegram_msg_id})"
         )
 
     @pytest.mark.parametrize(
