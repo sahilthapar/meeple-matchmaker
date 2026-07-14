@@ -60,11 +60,12 @@ async def message_handler(
 
     log.info("Attempting to parse message")
     post, game, user = (
-        parse_message(update.message, bgg_client)
+        await parse_message(update.message, bgg_client)
         if update.message
         else (None, None, None)
     )
     if not post or not game or not user:
+        await update.message.set_reaction("🤔")
         return
     if update.message:
         if post.post_type == "search" or post.post_type == "sale":

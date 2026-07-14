@@ -1,5 +1,6 @@
 """Module providing miscellaneous processing methods related to telegram posts"""
 
+import asyncio
 import re
 from logging import getLogger
 from typing import Optional, Tuple
@@ -32,6 +33,8 @@ POST_TYPES_BANNED_IN_GROUP = ["found"]
 
 def get_message_contents(message: Message) -> str:
     """Extract the text or caption from a message"""
+    if message is None:
+        return ""
     text = message.text or message.caption
     return text.lower() if text else ""
 
@@ -53,7 +56,7 @@ def parse_game_name(message: str) -> str:
     return first_line.replace("game name:", "").replace("game:", "").strip()
 
 
-def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
+async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     """
     Uses the BGG Client to fetch a game based on its name.
     If found, checks the DB for an existing entry, otherwise creates the game and returns the model.
@@ -61,7 +64,7 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     try:
         log.info("Trying exact match for game: %s", game_name)
         # todo: use .search instead of .game
-        game_exact = bgg_client.game(game_name, exact=True)
+        game_exact = await asyncio.to_thread(bgg_client.game, game_name, exact=True)
         if game_exact:
             log.info("Found exact match")
             game, _ = Game.get_or_create(
@@ -71,7 +74,9 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
     except BGGItemNotFoundError:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
-            game_fuzzy = bgg_client.game(game_name, exact=False)
+            game_fuzzy = await asyncio.to_thread(
+                bgg_client.game, game_name, exact=False
+            )
             if game_fuzzy:
                 log.info("Found fuzzy match")
                 game, _ = Game.get_or_create(
@@ -80,7 +85,10 @@ def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Game]:
                 return game
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
-            return
+            return None
+    except Exception as e:
+        raise e
+    return None
 
 
 def create_user_from_message(message: Message) -> User:
@@ -102,7 +110,7 @@ def get_message_without_command(message: Message) -> str:
     return text.split(" ")[1]
 
 
-def parse_message(
+async def parse_message(
     message: Message, bgg_client
 ) -> Tuple[Optional[Post], Optional[Game], Optional[User]]:
     """
@@ -127,7 +135,7 @@ def parse_message(
 
     # parse game info
     game_name = parse_game_name(message_without_tag)
-    game = get_game_details(game_name, bgg_client)
+    game = await get_game_details(game_name, bgg_client)
     if not game:
         log.warning("Game not found")
         return None, None, None
