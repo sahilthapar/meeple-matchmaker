@@ -62,7 +62,7 @@ def read_posts(
         .join(Game, on=Post.game == Game.id)
         .join(User, on=Post.user == User.id)
         .where(reduce(operator.and_, clauses))
-        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at)
+        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at.desc())
     )
     results = data.execute()
 
