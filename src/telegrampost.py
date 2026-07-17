@@ -141,7 +141,12 @@ async def parse_message(
         return None, None, None
 
     post = Post(
-        post_type=message_type, text=message_text, active=1, user=user, game=game
+        post_type=message_type,
+        text=message_text,
+        active=1,
+        user=user,
+        game=game,
+        telegram_msg_id=message.id,
     )
     game.save()
     user.save()
@@ -182,3 +187,18 @@ def is_from_external_chat(chat_type, chat_id) -> bool:
 def format_user_tag(username, userid):
     """Helper func that returns a markdown link to a user's profile"""
     return f"[{username}](tg://user?id={userid})"
+
+
+def escape_markdown_reserved_chars(text: str) -> str:
+    """Escape characters that are reserved by markdown when rendering bot messages."""
+    chars_to_escape = "_*[]()~`>#+-=|{}.!"
+    for char in chars_to_escape:
+        text = text.replace(char, f"\\{char}")
+    return text
+
+
+def form_link_to_post(telegram_msg_id, text="(Post)"):
+    """Helper func that returns a markdown link to a specific message in meeple market"""
+    # Group Chat IDs start with '-100', but links don't use that
+    chat_id_without_prefix = str(MEEPLE_MARKET_CHAT_ID)[4:]
+    return f"[{text}](tg://privatepost?channel={chat_id_without_prefix}&post={telegram_msg_id})"

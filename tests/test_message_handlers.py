@@ -4,7 +4,11 @@ from types import SimpleNamespace
 import pytest
 
 from src.constants import MEEPLE_MARKET_CHAT_ID
-from src.message_handlers import message_handler
+from src.message_handlers import (
+    find_matching_posts,
+    get_matching_post_message_contents,
+    message_handler,
+)
 from src.models import Post, Game, User
 from tests.helpers import initialize_post
 
@@ -16,6 +20,76 @@ class TestMessageHandlers:
     def mock_context(self, mocker):
         """Fixture to mock a telegram context"""
         mocker.patch("telegram.ext.ContextTypes.DEFAULT_TYPE")
+
+    def test_get_matching_post_message_contents_includes_post_link_for_sale_posts(
+        self, database
+    ):
+        """Sale posts should render a user tag plus a direct link to the post."""
+        post = initialize_post(
+            post_type="sale",
+            text="#sale terraforming mars",
+            active=True,
+            user_id=101,
+            user_name="alpha",
+            game_id=167791,
+            game_name="Terraforming Mars",
+        )
+        post.telegram_msg_id = 42
+        post.save()
+
+        contents = get_matching_post_message_contents(post)
+
+        assert contents == (
+            "[alpha](tg://user?id=101) "
+            f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post=42)"
+        )
+
+    def test_get_matching_post_message_contents_omits_post_link_for_non_sale_posts(
+        self, database
+    ):
+        """Non-sale posts should only include the user tag."""
+        post = initialize_post(
+            post_type="search",
+            text="#lookingfor terraforming mars",
+            active=True,
+            user_id=102,
+            user_name="beta",
+            game_id=167791,
+            game_name="Terraforming Mars",
+        )
+
+        contents = get_matching_post_message_contents(post)
+
+        assert contents == "[beta](tg://user?id=102)"
+
+    def test_find_matching_posts_renders_matching_active_posts(self, database):
+        """Matching posts should be rendered as a comma-separated list."""
+        game = Game.get_or_create(game_id=167791, game_name="Terraforming Mars")[0]
+        seller = User.get_or_create(telegram_userid=101, first_name="alpha")[0]
+        buyer = User.get_or_create(telegram_userid=202, first_name="beta")[0]
+
+        sale_post = Post.create(
+            post_type="sale",
+            text="#sale terraforming mars",
+            active=True,
+            user=seller,
+            game=game,
+            telegram_msg_id=42,
+        )
+        search_post = Post.create(
+            post_type="search",
+            text="#lookingfor terraforming mars",
+            active=True,
+            user=buyer,
+            game=game,
+        )
+
+        reply = find_matching_posts(search_post)
+
+        assert reply == (
+            "[alpha](tg://user?id=101) "
+            f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post={sale_post.telegram_msg_id})"
+        )
 
     @pytest.mark.parametrize(
         argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction, chat_id",

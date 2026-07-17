@@ -3,7 +3,9 @@
 import pytest
 from src.constants import MEEPLE_MARKET_CHAT_ID
 from src.telegrampost import (
+    escape_markdown_reserved_chars,
     format_user_tag,
+    form_link_to_post,
     parse_tag,
     TYPE_LOOKUP,
     parse_game_name,
@@ -319,3 +321,80 @@ class TestMessageParsing:
     def test_format_user_tag(self, username, user_id, expected):
         """Test if the function returns the correct markdown for a given user"""
         assert format_user_tag(username=username, userid=user_id) == expected
+
+    @pytest.mark.parametrize(
+        argnames="telegram_msg_id, link_text, expected",
+        argvalues=[
+            (
+                42,
+                "Go To Post",
+                f"[Go To Post](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post=42)",
+            ),
+            (
+                7,
+                "Open listing",
+                f"[Open listing](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post=7)",
+            ),
+        ],
+        ids=["default-text", "custom-text"],
+    )
+    def test_form_link_to_post(self, telegram_msg_id, link_text, expected):
+        """Test if the function returns the correct post link markdown."""
+        assert form_link_to_post(telegram_msg_id, text=link_text) == expected
+
+    @pytest.mark.parametrize(
+        "input_text, expected_output",
+        [
+            ("hello", "hello"),
+            ("hello_world", "hello\\_world"),
+            ("*bold*", "\\*bold\\*"),
+            ("[link]", "\\[link\\]"),
+            ("(text)", "\\(text\\)"),
+            ("hello~world", "hello\\~world"),
+            ("`code`", "\\`code\\`"),
+            (">quote", "\\>quote"),
+            ("#hashtag", "\\#hashtag"),
+            ("a+b", "a\\+b"),
+            ("a-b", "a\\-b"),
+            ("a=b", "a\\=b"),
+            ("a|b", "a\\|b"),
+            ("{text}", "\\{text\\}"),
+            ("hello.world", "hello\\.world"),
+            ("what!", "what\\!"),
+            (
+                "스플렌더: Pokémon (Splendor: Pokémon)",
+                "스플렌더: Pokémon \\(Splendor: Pokémon\\)",
+            ),
+            ("a_b*c[d]", "a\\_b\\*c\\[d\\]"),
+            (
+                "all!chars@#$%_*[]()~`>#+-=|{}.!test",
+                "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test",
+            ),
+        ],
+        ids=[
+            "no_special_chars",
+            "underscore",
+            "asterisks",
+            "square_brackets",
+            "parentheses",
+            "tilde",
+            "backtick",
+            "greater_than",
+            "hash",
+            "plus",
+            "minus",
+            "equals",
+            "pipe",
+            "curly_braces",
+            "period",
+            "exclamation",
+            "korean_and_parens",
+            "multiple_chars",
+            "all_chars",
+        ],
+    )
+    def test_escape_markdown_reserved_chars(self, input_text, expected_output):
+        """Tests escape_markdown_reserved_chars properly escapes all markdown reserved characters"""
+
+        result = escape_markdown_reserved_chars(input_text)
+        assert result == expected_output

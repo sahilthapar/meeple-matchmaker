@@ -8,6 +8,7 @@ from telegram import Update
 from boardgamegeek import BGGClient  # type: ignore
 
 from src.telegrampost import (
+    form_link_to_post,
     format_user_tag,
     parse_message,
     find_post_type,
@@ -86,16 +87,28 @@ def find_matching_posts(post: Post) -> Optional[str]:
     :return:
     """
 
-    post_type = COMPLEMENTARY_POST_TYPE.get(post.post_type)
-    posts = read_posts(game_id=post.game.game_id, post_type=post_type)
-    if posts:
-        return ", ".join(
-            [
-                format_user_tag(post.user.first_name, post.user.telegram_userid)
-                for post in posts
-            ]
-        )
-    return None
+    complementary_post_type = COMPLEMENTARY_POST_TYPE.get(post.post_type)
+    matching_posts = read_posts(
+        game_id=post.game.game_id,
+        post_type=complementary_post_type,
+    )
+
+    rendered = [
+        get_matching_post_message_contents(matching_post)
+        for matching_post in matching_posts
+    ]
+    return ", ".join(rendered) or None
+
+
+def get_matching_post_message_contents(post: Post):
+    """
+    Returns a markdown link to the sale post if it exists
+    Else returns a link to the user's profile
+    """
+    contents = format_user_tag(post.user.first_name, post.user.telegram_userid)
+    if post.telegram_msg_id and post.post_type == "sale":
+        contents += " " + form_link_to_post(post.telegram_msg_id)
+    return contents
 
 
 def disable_post(post: Post) -> None:

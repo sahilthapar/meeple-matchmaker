@@ -6,11 +6,16 @@ import logging
 import os
 from itertools import chain
 from typing import Iterable, Generator
-from boardgamegeek import BGGClient, CacheBackendMemory, BGGApiError
+from boardgamegeek import BGGClient, CacheBackendMemory
 from boardgamegeek.objects.games import CollectionBoardGame
 from src.constants import ADMIN_IDS
 from src.models import Post, UserCollection, Game
-from src.telegrampost import create_user_from_message, get_message_without_command
+from src.telegrampost import (
+    create_user_from_message,
+    form_link_to_post,
+    format_user_tag,
+    get_message_without_command,
+)
 from src.database import disable_posts, read_posts
 from src.messages import (
     INVALID_DISABLE_POST_FOR_USER,
@@ -25,29 +30,24 @@ from src.messages import (
 log = logging.getLogger("meeple-matchmaker")
 
 
-def format_post(post: Post, bgg_client: BGGClient) -> str:
+def format_post(post: Post) -> str:
     """
     Method to format a record for replying on telegram
     :param post:
     :param bgg_client:
     :return:
     """
-    game_id = post.game.game_id
     user_id = post.user.telegram_userid
     user_name = post.user.first_name
     game_name = post.game.game_name
-    if not game_name:
-        log.warning("Game name not found in database, searching BGG")
-        try:
-            # Game name not used, not sure if this block is relevant anymore
-            _ = bgg_client.game(game_id=game_id)
-        except BGGApiError:
-            log.error("game_id: %s", game_id)
-            log.error("BGGAPIError")
 
     # remove _ from game_name
-    game_name = game_name.replace("_", "")
-    return f"{game_name}: [{user_name}](tg://user?id={user_id})"
+    game_name_md = game_name.replace("_", "")
+
+    if post.post_type == "sale" and post.telegram_msg_id:
+        game_name_md = form_link_to_post(post.telegram_msg_id, game_name_md)
+
+    return f"{game_name_md}: {format_user_tag(user_name,user_id)}"
 
 
 def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
@@ -56,10 +56,6 @@ def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
     :param posts:
     :return:
     """
-    bgg_client = BGGClient(
-        cache=CacheBackendMemory(ttl=3600 * 24 * 7),
-        access_token=os.getenv("BGG_BEARER"),
-    )
     active_sales = [x for x in posts if x.post_type == "sale"]
     active_searches = [x for x in posts if x.post_type == "search"]
 
@@ -72,15 +68,12 @@ def format_list_of_posts(posts: Iterable[Post]) -> Generator[str, None, None]:
 
         if active_sales:
             formatted_sales = "\nActive sales:\n" + "\n".join(
-                [
-                    format_post(x, bgg_client)
-                    for x in active_sales[i : min(i + 100, sale_count)]
-                ]
+                [format_post(x) for x in active_sales[i : min(i + 100, sale_count)]]
             )
         if active_searches:
             formatted_searches = "\nActive searches:\n" + "\n".join(
                 [
-                    format_post(x, bgg_client)
+                    format_post(x)
                     for x in active_searches[i : min(i + 100, search_count)]
                 ]
             )

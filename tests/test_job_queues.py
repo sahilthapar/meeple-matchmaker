@@ -11,7 +11,6 @@ from src.job_queues import (
     generate_daily_summary,
     generate_weekly_summary,
     generate_summary,
-    escape_markdown_reserved_chars,
 )
 from src.models import User, Game, Post
 from src.constants import SALE_EXPIRY_DAYS, DAILY_SUMMARY_WINDOW, WEEKLY_SUMMARY_WINDOW
@@ -348,62 +347,6 @@ class TestJobQueues:
         assert "111" in str(error_call_args[1])  # User ID
         assert "Catan" in str(error_call_args[2])  # Game name
 
-    @pytest.mark.parametrize(
-        "input_text, expected_output",
-        [
-            ("hello", "hello"),
-            ("hello_world", "hello\\_world"),
-            ("*bold*", "\\*bold\\*"),
-            ("[link]", "\\[link\\]"),
-            ("(text)", "\\(text\\)"),
-            ("hello~world", "hello\\~world"),
-            ("`code`", "\\`code\\`"),
-            (">quote", "\\>quote"),
-            ("#hashtag", "\\#hashtag"),
-            ("a+b", "a\\+b"),
-            ("a-b", "a\\-b"),
-            ("a=b", "a\\=b"),
-            ("a|b", "a\\|b"),
-            ("{text}", "\\{text\\}"),
-            ("hello.world", "hello\\.world"),
-            ("what!", "what\\!"),
-            (
-                "스플렌더: Pokémon (Splendor: Pokémon)",
-                "스플렌더: Pokémon \\(Splendor: Pokémon\\)",
-            ),
-            ("a_b*c[d]", "a\\_b\\*c\\[d\\]"),
-            (
-                "all!chars@#$%_*[]()~`>#+-=|{}.!test",
-                "all\\!chars@\\#$%\\_\\*\\[\\]\\(\\)\\~\\`\\>\\#\\+\\-\\=\\|\\{\\}\\.\\!test",
-            ),
-        ],
-        ids=[
-            "no_special_chars",
-            "underscore",
-            "asterisks",
-            "square_brackets",
-            "parentheses",
-            "tilde",
-            "backtick",
-            "greater_than",
-            "hash",
-            "plus",
-            "minus",
-            "equals",
-            "pipe",
-            "curly_braces",
-            "period",
-            "exclamation",
-            "korean_and_parens",
-            "multiple_chars",
-            "all_chars",
-        ],
-    )
-    def test_escape_markdown_reserved_chars(self, input_text, expected_output):
-        """Tests escape_markdown_reserved_chars properly escapes all markdown reserved characters"""
-
-        result = escape_markdown_reserved_chars(input_text)
-        assert result == expected_output
 
     @pytest.mark.asyncio
     async def test_generate_daily_summary(self, database, mock_context, mocker):

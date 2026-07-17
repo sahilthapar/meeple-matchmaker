@@ -53,6 +53,7 @@ def read_posts(
             Post.user,
             Post.game,
             Post.active,
+            Post.telegram_msg_id,
             Game.game_id,
             Game.game_name,
             User.first_name,
@@ -61,11 +62,27 @@ def read_posts(
         .join(Game, on=Post.game == Game.id)
         .join(User, on=Post.user == User.id)
         .where(reduce(operator.and_, clauses))
-        .order_by(Post.post_type, Game.game_name, User.first_name)
-        .distinct()
+        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at.desc())
     )
-    return data.execute()
+    results = data.execute()
 
+    seen = set()
+    filtered_results = []
+
+    # Deduplicating here because distinct doesn't work when we fetch message ids
+    for matched_post in results:
+        dedupe_key = (
+            matched_post.user.telegram_userid,
+            matched_post.game.game_id,
+            matched_post.post_type,
+        )
+        if dedupe_key in seen:
+            continue
+
+        seen.add(dedupe_key)
+        filtered_results.append(matched_post)
+
+    return filtered_results
 
 def disable_posts(
     user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None
