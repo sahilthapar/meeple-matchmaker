@@ -86,6 +86,9 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return None
+        # These two blocks are so other exceptions don't get silently swallows
+        except Exception as e:
+            raise e
     except Exception as e:
         raise e
     return None
