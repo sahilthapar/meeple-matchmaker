@@ -14,6 +14,7 @@ from src.job_queues import (
 )
 from src.message_handlers import message_handler
 from src.command_handlers import (
+    get_logs,
     start_command,
     disable_command,
     list_all_active_sales,
@@ -28,9 +29,16 @@ from src.command_handlers import (
 from src.models import db
 from src.database import init_tables
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("./log/bot_logging.log", mode="a", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
 logging.getLogger("httpx").setLevel(logging.WARNING)
-log = logging.getLogger("meeple-matchmaker")
+log = logging.getLogger(__name__)
 
 
 def init_app(auth_token):
@@ -54,6 +62,7 @@ def init_app(auth_token):
         CommandHandler("import_my_bgg_collection", import_my_bgg_collection)
     )
     app.add_handler(CommandHandler("match_me", match_me))
+    app.add_handler(CommandHandler("get_logs", get_logs))
 
     # Generate the message handler with the bgg client so bgg_client doesn't get re-initialised on each message
     message_handler_with_client = init_message_handler()

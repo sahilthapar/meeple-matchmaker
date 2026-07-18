@@ -54,8 +54,8 @@ COPY database/meeple-matchmaker.db /app/seed/meeple-matchmaker.db
 # Copy the entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-
 RUN chmod a+rw /app/database /app/database/* || true
+RUN mkdir -p /app/log && chown -R appuser:appuser /app/log
 
 
 # Switch to the non-privileged user to run the application.
