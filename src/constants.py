@@ -16,6 +16,7 @@ ADMIN_IDS = [
     635786234,  # Anshul J
     683593077,  # Yash @starscr3am
     1294547458, # Prithvi K
+    1755481390, # Sandesh
 ]
 
 DAILY_SUMMARY_WINDOW = 2
