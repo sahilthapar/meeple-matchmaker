@@ -15,6 +15,7 @@ ADMIN_IDS = [
     6946013582,  # Mica
     635786234,  # Anshul J
     683593077,  # Yash @starscr3am
+    1294547458, # Prithvi K
     1755481390, # Sandesh
 ]
 

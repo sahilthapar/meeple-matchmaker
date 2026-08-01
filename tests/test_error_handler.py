@@ -15,8 +15,16 @@ class TestErrorHandler:
     @pytest.mark.asyncio
     async def test_error_handler_reports_exception_to_error_group(self, mocker):
         """The handler should log the failure and forward a report to the error chat."""
-        update = mocker.Mock()
-        update.to_dict.return_value = {"message": {"text": "hello"}}
+        class FakeUpdate:
+            def __init__(self, payload):
+                self._payload = payload
+
+            def to_dict(self):
+                return self._payload
+
+        mocker.patch("src.error_handler.Update", FakeUpdate)
+
+        update = FakeUpdate({"message": {"text": "hello"}})
         error = None
         try:
             raise RuntimeError("boom")
@@ -33,17 +41,20 @@ class TestErrorHandler:
 
         mocked_logger.error.assert_called_once()
         mocked_logger.info.assert_called_once()
-        context.bot.send_message.assert_awaited_once()
-        context.bot.send_message.assert_awaited_once_with(
-            chat_id=ERROR_GROUP_CHAT_ID,
-            text=mocker.ANY,
-            parse_mode=ParseMode.HTML,
-        )
+        assert context.bot.send_message.await_count == 2
 
-        sent_message = context.bot.send_message.await_args.kwargs["text"]
-        assert "An exception was raised while handling an update" in sent_message
-        assert "boom" in sent_message
-        assert "<pre>update =" in sent_message
+        first_call, second_call = context.bot.send_message.await_args_list
+
+        assert first_call.kwargs["chat_id"] == ERROR_GROUP_CHAT_ID
+        assert first_call.kwargs["parse_mode"] == ParseMode.HTML
+        assert "An exception was raised while handling an update" in first_call.kwargs["text"]
+        assert "<pre>update =" in first_call.kwargs["text"]
+        assert "hello" in first_call.kwargs["text"]
+
+        assert second_call.kwargs["chat_id"] == ERROR_GROUP_CHAT_ID
+        assert second_call.kwargs["parse_mode"] == ParseMode.HTML
+        assert "<pre>" in second_call.kwargs["text"]
+        assert "RuntimeError: boom" in second_call.kwargs["text"]
 
     @pytest.mark.asyncio
     async def test_error_handler_handles_non_update_objects(self, mocker):
@@ -60,8 +71,9 @@ class TestErrorHandler:
         await error_handler_cb("not-an-update", context)
 
         mocked_logger.error.assert_called_once()
-        context.bot.send_message.assert_awaited_once()
+        assert context.bot.send_message.await_count == 2
 
-        sent_message = context.bot.send_message.await_args.kwargs["text"]
-        assert "not-an-update" in sent_message
-        assert "bad payload" in sent_message
+        first_call, second_call = context.bot.send_message.await_args_list
+        assert "not-an-update" in first_call.kwargs["text"]
+        assert second_call.kwargs["parse_mode"] == ParseMode.HTML
+        assert "ValueError: bad payload" in second_call.kwargs["text"]

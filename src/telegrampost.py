@@ -11,7 +11,7 @@ from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
 from src.constants import MEEPLE_MARKET_CHAT_ID
 from src.models import Game, User, Post
 
-log = getLogger()
+log = getLogger(__name__)
 
 
 TYPE_LOOKUP = {

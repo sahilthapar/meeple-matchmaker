@@ -9,7 +9,7 @@ from telegram.ext import ContextTypes
 
 from src.constants import ERROR_GROUP_CHAT_ID
 
-log = logging.getLogger("meeple-matchmaker")
+log = logging.getLogger(__name__)
 
 
 async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -23,7 +23,11 @@ async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -
         None, context.error, context.error.__traceback__
     )
     tb_string = "".join(tb_list)
-
+    tb_arr = []
+    if len(tb_string) > 3000:
+        tb_arr = [tb_string[x:3000+x] for x in range(0,len(tb_string),3000)]
+    else:
+        tb_arr = [tb_string]
     # Build the message with some markup and additional information about what happened.
     # You might need to add some logic to deal with messages longer than the 4096 character limit.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
@@ -31,11 +35,14 @@ async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -
         "An exception was raised while handling an update\n"
         f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
         "</pre>\n\n"
-        f"<pre>{html.escape(tb_string)}</pre>"
     )
 
     log.info(len(message))
     # Finally, send the message
     await context.bot.send_message(
         chat_id=ERROR_GROUP_CHAT_ID, text=message, parse_mode=ParseMode.HTML
+    )
+    for tb in tb_arr:
+        await context.bot.send_message(
+        chat_id=ERROR_GROUP_CHAT_ID, text=f"<pre>{html.escape(tb)}</pre>", parse_mode=ParseMode.HTML
     )

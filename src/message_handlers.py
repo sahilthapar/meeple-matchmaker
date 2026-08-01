@@ -18,7 +18,7 @@ from src.telegrampost import (
 from src.database import read_posts, disable_posts
 from src.models import Post
 
-log = logging.getLogger("meeple-matchmaker")
+log = logging.getLogger(__name__)
 
 
 COMPLEMENTARY_POST_TYPE = {

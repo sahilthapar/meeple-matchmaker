@@ -14,7 +14,7 @@ from src.database import read_posts, update_and_get_stale_posts
 from src.messages import generate_stale_post_message, get_summary_message_header
 from src.telegrampost import escape_markdown_reserved_chars, form_link_to_post
 
-log = logging.getLogger("meeple-matchmaker")
+log = logging.getLogger(__name__)
 
 
 async def cleanup_expired_posts(context):

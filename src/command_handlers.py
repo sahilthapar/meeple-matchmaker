@@ -8,6 +8,7 @@ from itertools import chain
 from typing import Iterable, Generator
 from boardgamegeek import BGGClient, CacheBackendMemory
 from boardgamegeek.objects.games import CollectionBoardGame
+from telegram import Update
 from src.constants import ADMIN_IDS
 from src.models import Post, UserCollection, Game
 from src.telegrampost import (
@@ -27,7 +28,7 @@ from src.messages import (
     MEEPLE_MATCHMAKER_START,
 )
 
-log = logging.getLogger("meeple-matchmaker")
+log = logging.getLogger(__name__)
 
 
 def format_post(post: Post) -> str:
@@ -346,3 +347,28 @@ async def disable_post_for_user(update, _):
         await update.message.set_reaction("👍")
     except IndexError:
         await update.message.reply_text(INVALID_DISABLE_POST_FOR_USER)
+
+async def get_logs(update:Update, context):
+    """Fetch the log file
+    Must be requested by an admin only
+    """
+    if update.effective_chat.type != "private":
+        await update.message.set_reaction("👎")
+        return
+    if update.message.from_user.id not in ADMIN_IDS:
+        await update.message.reply_text(INVALID_NOT_AN_ADMIN)
+        return
+    log_file_path = "./log/bot_logging.log"
+
+    if os.path.exists(log_file_path):
+        # Send the file to the admin
+        log.info("Sending logs to user %s", update.message.from_user.full_name)
+        with open(log_file_path, 'rb') as document:
+            await context.bot.send_document(
+                chat_id=update.message.from_user.id, 
+                document=document, 
+                filename="bot_export.log",
+                caption="Here are your latest bot logs."
+            )
+    else:
+        await update.message.reply_text("Log file not found yet.")

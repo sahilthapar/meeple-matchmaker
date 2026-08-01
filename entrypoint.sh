@@ -18,6 +18,16 @@ if [ ! -f /app/database/meeple-matchmaker.db ]; then
   echo "Seeding meeple-matchmaker.db into volume..."
   cp /app/seed/meeple-matchmaker.db /app/database/meeple-matchmaker.db
 fi
+
+LOG_DIR=/app/log
+LOG_FILE=$LOG_DIR/bot_logging.log
+
+if [ ! -f "$LOG_FILE" ]; then
+  echo "Creating log file for the first time"
+  touch "$LOG_FILE"
+  chmod a+rw "$LOG_FILE"
+fi
+
 cd /app/migrations
 python migration_add_telegram_msg_id.py
 cd /app

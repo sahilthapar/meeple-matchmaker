@@ -14,5 +14,5 @@ __pycache__/
 /database/test.db
 /test.db
 /debug/
-
+*.log
 .env
