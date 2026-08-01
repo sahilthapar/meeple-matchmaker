@@ -4,12 +4,13 @@ import asyncio
 import re
 from logging import getLogger
 from typing import Optional, Tuple
+from peewee import IntegrityError
 
 from telegram import Message
 from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
 
 from src.constants import MEEPLE_MARKET_CHAT_ID
-from src.models import Game, User, Post
+from src.models import Game, User, Post, db
 
 log = getLogger(__name__)
 
@@ -67,10 +68,12 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
         game_exact = await asyncio.to_thread(bgg_client.game, game_name, exact=True)
         if game_exact:
             log.info("Found exact match")
-            game, _ = Game.get_or_create(
-                game_name=game_exact.name, game_id=game_exact.id
-            )
-            return game
+            # If a game with the same id already exists, creation fails and we execute the except block to get it
+            try:
+                with db.atomic():
+                    return Game.create(game_name=game_exact.name, game_id=game_exact.id)
+            except IntegrityError:
+                return Game.get(Game.game_id==game_exact.id)
     except BGGItemNotFoundError:
         try:
             log.info("Failed to find exact match, trying fuzzy match")
@@ -79,10 +82,12 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
             )
             if game_fuzzy:
                 log.info("Found fuzzy match")
-                game, _ = Game.get_or_create(
-                    game_name=game_fuzzy.name, game_id=game_fuzzy.id
-                )
-                return game
+                # If a game with the same id already exists, creation fails and we execute the except block to get it
+                try:
+                    with db.atomic():
+                        return Game.create(game_name=game_fuzzy.name, game_id=game_fuzzy.id)
+                except IntegrityError:
+                    return Game.get(Game.game_id==game_fuzzy.id)
         except BGGItemNotFoundError:
             log.warning("Failed to get fuzzy match, no game name found")
             return None
