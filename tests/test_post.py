@@ -1,11 +1,13 @@
 """Tests all telegram post helper functionality"""
 
 import pytest
-from src.constants import MEEPLE_MARKET_CHAT_ID
+from boardgamegeek import BGGApiError, BGGItemNotFoundError
+from src.constants import BGGFailed, MEEPLE_MARKET_CHAT_ID
 from src.telegrampost import (
     escape_markdown_reserved_chars,
     format_user_tag,
     form_link_to_post,
+    get_or_add_game,
     parse_tag,
     TYPE_LOOKUP,
     parse_game_name,
@@ -186,6 +188,99 @@ class TestMessageParsing:
         else:
             assert game.game_id == expected_game_id
             assert game.game_name == expected_game_name
+
+    async def test_get_or_add_game_returns_existing_record(self, database):
+        existing_game = Game.create(game_name="Monopoly", game_id=1406)
+
+        class DummyGame:
+            def __init__(self, name, game_id):
+                self.name = name
+                self.id = game_id
+
+        result = await get_or_add_game(DummyGame("Monopoly", 1406), search_type="exact")
+
+        assert result.id == existing_game.id
+        assert result.game_id == existing_game.game_id
+        assert result.game_name == existing_game.game_name
+
+    async def test_get_or_add_game_creates_new_record(self, database):
+        class DummyGame:
+            def __init__(self, name, game_id):
+                self.name = name
+                self.id = game_id
+
+        result = await get_or_add_game(DummyGame("Catan", 13), search_type="exact")
+
+        assert isinstance(result, Game)
+        assert result.game_id == 13
+        assert result.game_name == "Catan"
+        assert Game.select().where(Game.game_id == 13).exists()
+
+    async def test_get_game_details_retries_after_api_error(self, database):
+        class DummyGame:
+            def __init__(self, name, game_id):
+                self.name = name
+                self.id = game_id
+
+        class FlakyBGGClient:
+            def __init__(self):
+                self.call_count = 0
+
+            def game(self, game_name: str = "", exact: bool = True):
+                self.call_count += 1
+                if self.call_count == 1:
+                    raise BGGApiError("Temporary BGG failure")
+                return DummyGame("Monopoly", 1406)
+
+        client = FlakyBGGClient()
+        result = await get_game_details("monopoly", client)
+
+        assert result is not None
+        assert result.game_id == 1406
+        assert result.game_name == "Monopoly"
+        assert client.call_count > 1
+
+    async def test_get_game_details_exhausts_retries_and_raises_bgg_failed(
+        self, database
+    ):
+        class FailingBGGClient:
+            def __init__(self):
+                self.call_count = 0
+
+            def game(self, game_name: str = "", exact: bool = True):
+                self.call_count += 1
+                raise BGGApiError("Persistent BGG failure")
+
+        client = FailingBGGClient()
+        with pytest.raises(BGGFailed):
+            await get_game_details("monopoly", client)
+
+        assert client.call_count == 2
+
+    async def test_get_game_details_returns_none_when_item_not_found_for_both_search_types(
+        self, database
+    ):
+        class MissingBGGClient:
+            def __init__(self):
+                self.call_count = 0
+
+            def game(self, game_name: str = "", exact: bool = True):
+                self.call_count += 1
+                raise BGGItemNotFoundError
+
+        client = MissingBGGClient()
+        result = await get_game_details("monopoly", client)
+
+        assert result is None
+        assert client.call_count == 2
+
+    async def test_get_game_details_propagates_unexpected_exception(self, database):
+        class BrokenBGGClient:
+            def game(self, game_name: str = "", exact: bool = True):
+                raise ValueError("Unexpected error")
+
+        with pytest.raises(ValueError):
+            await get_game_details("monopoly", BrokenBGGClient())
 
     @pytest.mark.parametrize(
         argnames="message, user_id, expected_type, expected_game_id, expected_game_name",

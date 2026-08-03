@@ -347,7 +347,6 @@ class TestJobQueues:
         assert "111" in str(error_call_args[1])  # User ID
         assert "Catan" in str(error_call_args[2])  # Game name
 
-
     @pytest.mark.asyncio
     async def test_generate_daily_summary(self, database, mock_context, mocker):
         """Tests generate_daily_summary calls generate_summary with DAILY_SUMMARY_WINDOW"""
