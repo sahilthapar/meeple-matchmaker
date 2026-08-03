@@ -21,3 +21,7 @@ ADMIN_IDS = [
 
 DAILY_SUMMARY_WINDOW = 2
 WEEKLY_SUMMARY_WINDOW = 7
+
+# max attempts to hit the bgg .game api
+MAX_ATTEMPTS = 2
+SEARCH_TYPES = ["exact", "fuzzy"]

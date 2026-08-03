@@ -7,9 +7,9 @@ from typing import Optional, Tuple
 from peewee import IntegrityError
 
 from telegram import Message
-from boardgamegeek import BGGClient, BGGItemNotFoundError  # type: ignore
+from boardgamegeek import BGGApiError, BGGClient, BGGItemNotFoundError  # type: ignore
 
-from src.constants import MEEPLE_MARKET_CHAT_ID
+from src.constants import MAX_ATTEMPTS, MEEPLE_MARKET_CHAT_ID, SEARCH_TYPES
 from src.models import Game, User, Post, db
 
 log = getLogger(__name__)
@@ -62,42 +62,34 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
     Uses the BGG Client to fetch a game based on its name.
     If found, checks the DB for an existing entry, otherwise creates the game and returns the model.
     """
-    try:
-        log.info("Trying exact match for game: %s", game_name)
-        # todo: use .search instead of .game
-        game_exact = await asyncio.to_thread(bgg_client.game, game_name, exact=True)
-        if game_exact:
-            log.info("Found exact match")
-            # If a game with the same id already exists, creation fails and we execute the except block to get it
+    for attempt in range(MAX_ATTEMPTS):
+        for search_type in SEARCH_TYPES:
             try:
-                with db.atomic():
-                    return Game.create(game_name=game_exact.name, game_id=game_exact.id)
-            except IntegrityError:
-                return Game.get(Game.game_id==game_exact.id)
-    except BGGItemNotFoundError:
-        try:
-            log.info("Failed to find exact match, trying fuzzy match")
-            game_fuzzy = await asyncio.to_thread(
-                bgg_client.game, game_name, exact=False
-            )
-            if game_fuzzy:
-                log.info("Found fuzzy match")
-                # If a game with the same id already exists, creation fails and we execute the except block to get it
-                try:
-                    with db.atomic():
-                        return Game.create(game_name=game_fuzzy.name, game_id=game_fuzzy.id)
-                except IntegrityError:
-                    return Game.get(Game.game_id==game_fuzzy.id)
-        except BGGItemNotFoundError:
-            log.warning("Failed to get fuzzy match, no game name found")
-            return None
-        # These two blocks are so other exceptions don't get silently swallowed
-        except Exception as e:
-            raise e
-    except Exception as e:
-        raise e
-    return None
+                log.info("Trying %s match for game: %s",search_type, game_name)
+                # todo: use .search instead of .game
+                game = await asyncio.to_thread(bgg_client.game, game_name, exact=search_type=="exact")
+                return await get_or_add_game(game, search_type=search_type)
+            except BGGItemNotFoundError:
+                # If the game is not found, continue into the fuzzy block
+                continue
+            except BGGApiError as e:
+                log.warning("BGG API Failed at %s search with error %s, retrying",search_type, e)
+                attempt += 1
+                # Break out of this block in case we get a bggapierror
+                break
+            except Exception as e:
+                raise e
 
+async def get_or_add_game(game, search_type="exact"):
+    """Helper function that tries to add a game to the db. If the same id exists, we catch the Integrity Error and return that game"""
+    if game:
+        log.info("Found %s match", search_type)
+        try:
+            with db.atomic():
+                return Game.create(game_name=game.name, game_id=game.id)
+        except IntegrityError:
+            return Game.get(Game.game_id==game.id)
+    return None
 
 def create_user_from_message(message: Message) -> User:
     """
