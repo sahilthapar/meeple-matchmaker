@@ -192,7 +192,6 @@ class TestCommandHandlers:
             mock_update.message.reply_text.assert_called()
 
     @pytest.mark.parametrize("chat_type", ("private", "group"))
-    
     async def test_list_all_active_searches(
         self, mock_update, chat_type, mocker, database
     ):

@@ -62,7 +62,9 @@ def read_posts(
         .join(Game, on=Post.game == Game.id)
         .join(User, on=Post.user == User.id)
         .where(reduce(operator.and_, clauses))
-        .order_by(Post.post_type, Game.game_name, User.first_name, Post.updated_at.desc())
+        .order_by(
+            Post.post_type, Game.game_name, User.first_name, Post.updated_at.desc()
+        )
     )
     results = data.execute()
 
@@ -83,6 +85,7 @@ def read_posts(
         filtered_results.append(matched_post)
 
     return filtered_results
+
 
 def disable_posts(
     user_id: int, post_type: Optional[str] = None, game_id: Optional[int] = None

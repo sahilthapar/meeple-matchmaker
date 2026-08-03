@@ -95,4 +95,3 @@ async def generate_summary(summary_period, context: CallbackContext):
     await context.bot.send_message(
         chat_id=MEEPLE_MARKET_CHAT_ID, text=final_table, parse_mode="MarkdownV2"
     )
-

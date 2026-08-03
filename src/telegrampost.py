@@ -65,20 +65,27 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
     for attempt in range(MAX_ATTEMPTS):
         for search_type in SEARCH_TYPES:
             try:
-                log.info("Trying %s match for game: %s",search_type, game_name)
+                log.info("Trying %s match for game: %s", search_type, game_name)
                 # todo: use .search instead of .game
-                game = await asyncio.to_thread(bgg_client.game, game_name, exact=search_type=="exact")
+                game = await asyncio.to_thread(
+                    bgg_client.game, game_name, exact=search_type == "exact"
+                )
                 return await get_or_add_game(game, search_type=search_type)
             except BGGItemNotFoundError:
                 # If the game is not found, continue into the fuzzy block
                 continue
             except BGGApiError as e:
-                log.warning("BGG API Failed at %s search with error %s, retrying",search_type, e)
+                log.warning(
+                    "BGG API Failed at %s search with error %s, retrying",
+                    search_type,
+                    e,
+                )
                 attempt += 1
                 # Break out of this block in case we get a bggapierror
                 break
             except Exception as e:
                 raise e
+
 
 async def get_or_add_game(game, search_type="exact"):
     """Helper function that tries to add a game to the db. If the same id exists, we catch the Integrity Error and return that game"""
@@ -88,8 +95,9 @@ async def get_or_add_game(game, search_type="exact"):
             with db.atomic():
                 return Game.create(game_name=game.name, game_id=game.id)
         except IntegrityError:
-            return Game.get(Game.game_id==game.id)
+            return Game.get(Game.game_id == game.id)
     return None
+
 
 def create_user_from_message(message: Message) -> User:
     """
