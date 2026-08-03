@@ -1,8 +1,8 @@
 """Tests all telegram post helper functionality"""
 
 import pytest
-from boardgamegeek import BGGApiError
-from src.constants import MEEPLE_MARKET_CHAT_ID
+from boardgamegeek import BGGApiError, BGGItemNotFoundError
+from src.constants import BGGFailed, MEEPLE_MARKET_CHAT_ID
 from src.telegrampost import (
     escape_markdown_reserved_chars,
     format_user_tag,
@@ -239,6 +239,36 @@ class TestMessageParsing:
         assert result.game_id == 1406
         assert result.game_name == "Monopoly"
         assert client.call_count > 1
+
+    async def test_get_game_details_exhausts_retries_and_raises_bgg_failed(self, database):
+        class FailingBGGClient:
+            def __init__(self):
+                self.call_count = 0
+
+            def game(self, game_name: str = "", exact: bool = True):
+                self.call_count += 1
+                raise BGGApiError("Persistent BGG failure")
+
+        client = FailingBGGClient()
+        with pytest.raises(BGGFailed):
+            await get_game_details("monopoly", client)
+
+        assert client.call_count == 2
+
+    async def test_get_game_details_returns_none_when_item_not_found_for_both_search_types(self, database):
+        class MissingBGGClient:
+            def __init__(self):
+                self.call_count = 0
+
+            def game(self, game_name: str = "", exact: bool = True):
+                self.call_count += 1
+                raise BGGItemNotFoundError
+
+        client = MissingBGGClient()
+        result = await get_game_details("monopoly", client)
+
+        assert result is None
+        assert client.call_count == 2
 
     async def test_get_game_details_propagates_unexpected_exception(self, database):
         class BrokenBGGClient:

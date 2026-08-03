@@ -25,3 +25,7 @@ WEEKLY_SUMMARY_WINDOW = 7
 # max attempts to hit the bgg .game api
 MAX_ATTEMPTS = 2
 SEARCH_TYPES = ["exact", "fuzzy"]
+
+# Custom exception
+class BGGFailed(Exception):
+    """We raise this when retries run out and bgg api still fails"""
