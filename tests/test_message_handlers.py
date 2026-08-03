@@ -10,6 +10,7 @@ from src.message_handlers import (
     get_matching_post_message_contents,
     message_handler,
 )
+from src.messages import BGG_DOWN_MESSAGE
 from src.models import Post, Game, User
 from tests.helpers import initialize_post
 
@@ -92,7 +93,7 @@ class TestMessageHandlers:
             f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post={sale_post.telegram_msg_id})"
         )
 
-    async def test_message_handler_reacts_with_chain_burst_on_bgg_failed(
+    async def test_message_handler_replies_with_msg_on_bgg_failed(
         self, database, mock_update, mock_context
     ):
         class FailingBGGClient:
@@ -108,8 +109,7 @@ class TestMessageHandlers:
 
         await message_handler(mock_update, mock_context, FailingBGGClient())
 
-        mock_update.message.set_reaction.assert_called_once_with("⛓️‍💥")
-        mock_update.message.reply_text.assert_not_called()
+        mock_update.message.reply_text.assert_called_once_with(BGG_DOWN_MESSAGE)
 
     @pytest.mark.parametrize(
         argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction, chat_id",

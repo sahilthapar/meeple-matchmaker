@@ -8,6 +8,7 @@ from telegram import Update
 from boardgamegeek import BGGClient  # type: ignore
 
 from src.constants import BGGFailed
+from src.messages import BGG_DOWN_MESSAGE
 from src.telegrampost import (
     form_link_to_post,
     format_user_tag,
@@ -70,7 +71,7 @@ async def message_handler(
         )
     except BGGFailed:
         log.error("BGG API Failed")
-        await update.message.set_reaction("⛓️‍💥")
+        await update.message.reply_text(BGG_DOWN_MESSAGE)
         return
     if not post or not game or not user:
         await update.message.set_reaction("🤔")
