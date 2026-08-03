@@ -64,9 +64,10 @@ async def message_handler(
 
     try:
         post, game, user = (
-        await parse_message(update.message, bgg_client)
-        if update.message
-        else (None, None, None))
+            await parse_message(update.message, bgg_client)
+            if update.message
+            else (None, None, None)
+        )
     except BGGFailed:
         log.error("BGG API Failed")
         await update.message.set_reaction("⛓️‍💥")

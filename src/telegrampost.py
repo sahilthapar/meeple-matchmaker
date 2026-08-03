@@ -72,9 +72,10 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
                 )
                 return await get_or_add_game(game, search_type=search_type)
             except BGGItemNotFoundError:
+                # If we have not found the game in all search types, exit
+                if search_type == SEARCH_TYPES[-1]:
+                    return None
                 # If the game is not found, continue into the fuzzy block
-                if search_type=="fuzzy":
-                    return
                 continue
             except BGGApiError as e:
                 log.warning(
@@ -83,12 +84,13 @@ async def get_game_details(game_name: str, bgg_client: BGGClient) -> Optional[Ga
                     e,
                 )
                 # If we have exhausted attempts and still get a bgg error, inform the caller
-                if attempt==MAX_ATTEMPTS-1:
+                if attempt == MAX_ATTEMPTS - 1:
                     raise BGGFailed from e
                 # Break out of this block in case we get a bggapierror
                 break
             except Exception as e:
                 raise e
+
 
 async def get_or_add_game(game, search_type="exact"):
     """Helper function that tries to add a game to the db. If the same id exists, we catch the Integrity Error and return that game"""

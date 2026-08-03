@@ -240,7 +240,9 @@ class TestMessageParsing:
         assert result.game_name == "Monopoly"
         assert client.call_count > 1
 
-    async def test_get_game_details_exhausts_retries_and_raises_bgg_failed(self, database):
+    async def test_get_game_details_exhausts_retries_and_raises_bgg_failed(
+        self, database
+    ):
         class FailingBGGClient:
             def __init__(self):
                 self.call_count = 0
@@ -255,7 +257,9 @@ class TestMessageParsing:
 
         assert client.call_count == 2
 
-    async def test_get_game_details_returns_none_when_item_not_found_for_both_search_types(self, database):
+    async def test_get_game_details_returns_none_when_item_not_found_for_both_search_types(
+        self, database
+    ):
         class MissingBGGClient:
             def __init__(self):
                 self.call_count = 0
