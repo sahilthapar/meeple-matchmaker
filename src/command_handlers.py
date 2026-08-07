@@ -6,11 +6,10 @@ import logging
 import os
 from itertools import chain
 from typing import Iterable, Generator
-from boardgamegeek import BGGClient, CacheBackendMemory
 from boardgamegeek.objects.games import CollectionBoardGame
 from telegram import Update
 from src.constants import ADMIN_IDS
-from src.models import Post, UserCollection, Game
+from src.models import Post
 from src.telegrampost import (
     create_user_from_message,
     form_link_to_post,
@@ -23,7 +22,6 @@ from src.messages import (
     INVALID_NOT_AN_ADMIN,
     INVALID_DISABLE_USER,
     INVALID_ADD_BGG_USERNAME_ERROR,
-    INVALID_ADD_BGG_USERNAME_NOT_FOUND,
     INVALID_ADD_BGG_USERNAME_SHOW_FORMAT,
     MEEPLE_MATCHMAKER_START,
 )
@@ -283,7 +281,8 @@ async def disable_post_for_user(update, _):
     except IndexError:
         await update.message.reply_text(INVALID_DISABLE_POST_FOR_USER)
 
-async def get_logs(update:Update, context):
+
+async def get_logs(update: Update, context):
     """Fetch the log file
     Must be requested by an admin only
     """
@@ -298,12 +297,12 @@ async def get_logs(update:Update, context):
     if os.path.exists(log_file_path):
         # Send the file to the admin
         log.info("Sending logs to user %s", update.message.from_user.full_name)
-        with open(log_file_path, 'rb') as document:
+        with open(log_file_path, "rb") as document:
             await context.bot.send_document(
-                chat_id=update.message.from_user.id, 
-                document=document, 
+                chat_id=update.message.from_user.id,
+                document=document,
                 filename="bot_export.log",
-                caption="Here are your latest bot logs."
+                caption="Here are your latest bot logs.",
             )
     else:
         await update.message.reply_text("Log file not found yet.")
