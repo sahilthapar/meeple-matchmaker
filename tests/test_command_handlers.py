@@ -323,7 +323,6 @@ class TestCommandHandlers:
     @pytest.mark.parametrize(
         ["game", "expected_status"],
         [
-            (SimpleNamespace(for_trade=True), "sale"),
             (SimpleNamespace(want_to_buy=True, for_trade=False), "search"),
             (
                 SimpleNamespace(wishlist=True, for_trade=False, want_to_buy=False),
@@ -331,7 +330,7 @@ class TestCommandHandlers:
             ),
             (SimpleNamespace(for_trade=False, wishlist=False, want_to_buy=False), None),
         ],
-        ids=["for_trade", "want_to_buy", "wishlist", "no_status"],
+        ids=["want_to_buy", "wishlist", "no_status"],
     )
     def test_get_status_from_bgg_game(self, game, expected_status):
         status = get_status_from_bgg_game(game)

@@ -187,9 +187,7 @@ def get_status_from_bgg_game(game: CollectionBoardGame) -> str:
     """
     Maps a BGG game status to a meeple-matchmaker post tag
     """
-    if game.for_trade:
-        return "sale"
-
+    # Only allow search posts to be added via import
     if game.want_to_buy or game.wishlist:
         return "search"
 
