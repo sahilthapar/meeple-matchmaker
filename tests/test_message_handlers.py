@@ -1,5 +1,6 @@
 """Test file for all message handlers"""
 
+from boardgamegeek import BGGApiError
 from types import SimpleNamespace
 import pytest
 
@@ -9,6 +10,7 @@ from src.message_handlers import (
     get_matching_post_message_contents,
     message_handler,
 )
+from src.messages import BGG_DOWN_MESSAGE
 from src.models import Post, Game, User
 from tests.helpers import initialize_post
 
@@ -90,6 +92,24 @@ class TestMessageHandlers:
             "[alpha](tg://user?id=101) "
             f"[(Post)](tg://privatepost?channel={str(MEEPLE_MARKET_CHAT_ID)[4:]}&post={sale_post.telegram_msg_id})"
         )
+
+    async def test_message_handler_replies_with_msg_on_bgg_failed(
+        self, database, mock_update, mock_context
+    ):
+        class FailingBGGClient:
+            def game(self, game_name: str = "", exact: bool = True):
+                raise BGGApiError("Persistent BGG failure")
+
+        mock_update.message.text = "#lookingfor monopoly"
+        mock_update.message.from_user.id = 101
+        mock_update.message.from_user.first_name = "alpha"
+        mock_update.message.from_user.last_name = "beta"
+        mock_update.effective_chat.type = "private"
+        mock_update.effective_chat.id = 123
+
+        await message_handler(mock_update, mock_context, FailingBGGClient())
+
+        mock_update.message.reply_text.assert_called_once_with(BGG_DOWN_MESSAGE)
 
     @pytest.mark.parametrize(
         argnames="init_posts,new_messages,expected_replies,chat_type,expected_reaction, chat_id",

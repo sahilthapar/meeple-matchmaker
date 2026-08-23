@@ -348,7 +348,8 @@ async def disable_post_for_user(update, _):
     except IndexError:
         await update.message.reply_text(INVALID_DISABLE_POST_FOR_USER)
 
-async def get_logs(update:Update, context):
+
+async def get_logs(update: Update, context):
     """Fetch the log file
     Must be requested by an admin only
     """
@@ -363,12 +364,12 @@ async def get_logs(update:Update, context):
     if os.path.exists(log_file_path):
         # Send the file to the admin
         log.info("Sending logs to user %s", update.message.from_user.full_name)
-        with open(log_file_path, 'rb') as document:
+        with open(log_file_path, "rb") as document:
             await context.bot.send_document(
-                chat_id=update.message.from_user.id, 
-                document=document, 
+                chat_id=update.message.from_user.id,
+                document=document,
                 filename="bot_export.log",
-                caption="Here are your latest bot logs."
+                caption="Here are your latest bot logs.",
             )
     else:
         await update.message.reply_text("Log file not found yet.")

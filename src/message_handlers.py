@@ -7,6 +7,8 @@ from telegram.ext import ContextTypes
 from telegram import Update
 from boardgamegeek import BGGClient  # type: ignore
 
+from src.constants import BGGFailed
+from src.messages import BGG_DOWN_MESSAGE
 from src.telegrampost import (
     form_link_to_post,
     format_user_tag,
@@ -60,11 +62,17 @@ async def message_handler(
         return
 
     log.info("Attempting to parse message")
-    post, game, user = (
-        await parse_message(update.message, bgg_client)
-        if update.message
-        else (None, None, None)
-    )
+
+    try:
+        post, game, user = (
+            await parse_message(update.message, bgg_client)
+            if update.message
+            else (None, None, None)
+        )
+    except BGGFailed:
+        log.error("BGG API Failed")
+        await update.message.reply_text(BGG_DOWN_MESSAGE)
+        return
     if not post or not game or not user:
         await update.message.set_reaction("🤔")
         return

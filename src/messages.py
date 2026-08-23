@@ -35,6 +35,9 @@ Suggestions? Use the chit chat group or [GitHub issues](https://github.com/sahil
 **Don't post suggestions in the main channel.**
 """
 
+# Message Handler Messages
+BGG_DOWN_MESSAGE = "The BGG API seems to be down, try again later"
+
 
 def generate_stale_post_message(user_name, game_name):
     """Generates the message that is sent to a user when their sale post is disabled"""

@@ -31,7 +31,7 @@ from src.database import init_tables
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler("./log/bot_logging.log", mode="a", encoding="utf-8"),
         logging.StreamHandler(),

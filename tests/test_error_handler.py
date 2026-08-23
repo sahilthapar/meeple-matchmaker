@@ -15,6 +15,7 @@ class TestErrorHandler:
     @pytest.mark.asyncio
     async def test_error_handler_reports_exception_to_error_group(self, mocker):
         """The handler should log the failure and forward a report to the error chat."""
+
         class FakeUpdate:
             def __init__(self, payload):
                 self._payload = payload
@@ -47,7 +48,10 @@ class TestErrorHandler:
 
         assert first_call.kwargs["chat_id"] == ERROR_GROUP_CHAT_ID
         assert first_call.kwargs["parse_mode"] == ParseMode.HTML
-        assert "An exception was raised while handling an update" in first_call.kwargs["text"]
+        assert (
+            "An exception was raised while handling an update"
+            in first_call.kwargs["text"]
+        )
         assert "<pre>update =" in first_call.kwargs["text"]
         assert "hello" in first_call.kwargs["text"]
 

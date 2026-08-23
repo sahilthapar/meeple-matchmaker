@@ -25,7 +25,7 @@ async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -
     tb_string = "".join(tb_list)
     tb_arr = []
     if len(tb_string) > 3000:
-        tb_arr = [tb_string[x:3000+x] for x in range(0,len(tb_string),3000)]
+        tb_arr = [tb_string[x : 3000 + x] for x in range(0, len(tb_string), 3000)]
     else:
         tb_arr = [tb_string]
     # Build the message with some markup and additional information about what happened.
@@ -44,5 +44,7 @@ async def error_handler_cb(update: object, context: ContextTypes.DEFAULT_TYPE) -
     )
     for tb in tb_arr:
         await context.bot.send_message(
-        chat_id=ERROR_GROUP_CHAT_ID, text=f"<pre>{html.escape(tb)}</pre>", parse_mode=ParseMode.HTML
-    )
+            chat_id=ERROR_GROUP_CHAT_ID,
+            text=f"<pre>{html.escape(tb)}</pre>",
+            parse_mode=ParseMode.HTML,
+        )
